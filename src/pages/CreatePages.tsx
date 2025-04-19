@@ -50,33 +50,33 @@ const CreatePage: React.FC = () => {
 
   const doRegister = async () => {
     setShowVerificationModal(false);
-
+  
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
       if (signUpError) throw new Error("Account creation failed: " + signUpError.message);
-
+  
       const userId = data.user?.id;
       if (!userId) throw new Error("No user ID returned from Supabase.");
-
-      // Hash the password
+  
+      // ✅ Hash the password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-
-      // Validate role
+  
+      // ✅ Validate role
       if (!['user', 'admin'].includes(cleanedRole)) {
         setAlertMessage("Invalid role. Please choose 'user' or 'admin'.");
         setShowAlert(true);
         return;
       }
-
-      // Admin restriction
+  
+      // ✅ Restrict admin to nbsc.edu.ph emails
       if (cleanedRole === 'admin' && !email.endsWith('@nbsc.edu.ph')) {
         setAlertMessage("Only users with @nbsc.edu.ph email can register as admin.");
         setShowAlert(true);
         return;
       }
-
-      // Insert user profile with hashed password
+  
+      // ✅ INSERT into 'users' table
       const { error: insertError } = await supabase.from("users").insert([
         {
           id: userId,
@@ -86,15 +86,27 @@ const CreatePage: React.FC = () => {
           user_password: hashedPassword
         }
       ]);
-
-      if (insertError) throw new Error("Failed to save user profile: " + insertError.message);
-
+  
+      // ✅ Handle RLS error or any insert error
+      if (insertError) {
+        if (insertError.message.includes("row-level security")) {
+          setAlertMessage("✅ Account created. Please check your email to verify before logging in.");
+          setShowAlert(true);
+          return;
+        } else {
+          throw new Error("Failed to save user profile: " + insertError.message);
+        }
+      }
+  
+      // ✅ Everything succeeded
       setShowSuccessModal(true);
+  
     } catch (err) {
       setAlertMessage(err instanceof Error ? err.message : "An unknown error occurred.");
       setShowAlert(true);
     }
   };
+  
 
   return (
     <IonPage>

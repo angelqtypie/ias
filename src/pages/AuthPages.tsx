@@ -34,53 +34,61 @@ const AuthPage: React.FC = () => {
       setShowAlert(true);
       return;
     }
-
+  
     const { data: loginData, error } = await supabase.auth.signInWithPassword({
       email: username,
       password: password,
     });
-
+  
     if (error) {
       setAlertMessage('Login failed: ' + error.message);
       setShowAlert(true);
       return;
     }
-
+    
+  
     const userId = loginData.user?.id;
 
-    if (!userId) {
-      setAlertMessage('No user found.');
-      setShowAlert(true);
-      return;
-    }
+if (!userId) {
+  setAlertMessage('No user found.');
+  setShowAlert(true);
+  return;
+}
 
-    // Log the login event
+// 🔍 Fetch user's role from users table
+const { data: profile, error: profileError } = await supabase
+  .from('users')
+  .select('role')
+  .eq('id', userId)
+  .single();
+
+if (profileError || !profile) {
+  setAlertMessage('Failed to fetch user role.');
+  setShowAlert(true);
+  return;
+}
+
 await supabase.from('login_logs').insert([
-    {
-      user_id: userId,
-      email: username
-    }
-  ]);
-  
-    const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', userId)
-      .single();
+  {
+    user_id: userId,
+    email: username,
+    role: profile.role, // ensure this is 'admin' or 'user'
+    logged_in_at: new Date().toISOString(),
+    expire_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // optional
+  }
+]);
 
-    if (profileError || !profile) {
-      setAlertMessage('Failed to fetch user role.');
-      setShowAlert(true);
-      return;
-    }
+console.log("✅ Logged in role:", profile.role);
 
-    console.log("✅ Logged in role:", profile.role);
+localStorage.setItem('email', username);
 
-    if (profile.role === 'admin') {
-      navigation.push('/dashboard', 'forward', 'replace');
-    } else {
-      navigation.push('/welcome', 'forward', 'replace');
-    }
+
+
+if (profile.role === 'admin') {
+  navigation.push('/dashboard', 'forward', 'replace');
+} else {
+  navigation.push('/welcome', 'forward', 'replace');
+}
   };
 
   return (

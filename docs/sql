@@ -1,0 +1,49 @@
+
+-- Enable required extensions
+create extension if not exists "pgcrypto"; -- for gen_random_uuid()
+
+-- USERS TABLE
+create table if not exists users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null unique,
+  full_name text,
+  role text check (role in ('user', 'admin')) default 'user',
+  user_password text not null,
+  created_at timestamp with time zone default current_timestamp
+);
+
+-- LOGIN LOGS TABLE
+create table if not exists login_logs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  email text,
+  logged_in_at timestamp with time zone default current_timestamp,
+  expire_at timestamp with time zone default (current_timestamp + interval '30 days')
+);
+
+-- Enable Row-Level Security
+alter table users enable row level security;
+alter table login_logs enable row level security;
+
+-- RLS Policies for `users`
+create policy "Users can view their own profile"
+  on users for select
+  using (auth.uid() = id);
+
+create policy "Users can update their own profile"
+  on users for update
+  using (auth.uid() = id);
+
+create policy "Anyone can insert own user profile"
+  on users for insert
+  with check (auth.uid() = id);
+
+-- RLS Policy for `login_logs` (insert allowed for logged-in users)
+create policy "Insert own login log"
+  on login_logs for insert
+  with check (auth.uid() = user_id);
+
+-- Allow selecting logs only for the user's own entries
+create policy "Read own login logs"
+  on login_logs for select
+  using (auth.uid() = user_id);
