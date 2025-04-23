@@ -96,7 +96,7 @@ const DashboardPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="primary">
+        <IonToolbar color="dark">
           <IonTitle>Admin Dashboard</IonTitle>
         </IonToolbar>
       </IonHeader>

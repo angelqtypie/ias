@@ -9,7 +9,6 @@ import {
   IonInput,
   IonItem,
   IonLabel,
-  IonAvatar,
   IonAlert,
   useIonRouter,
   useIonViewWillEnter,
@@ -34,61 +33,55 @@ const AuthPage: React.FC = () => {
       setShowAlert(true);
       return;
     }
-  
+
     const { data: loginData, error } = await supabase.auth.signInWithPassword({
       email: username,
       password: password,
     });
-  
+
     if (error) {
       setAlertMessage('Login failed: ' + error.message);
       setShowAlert(true);
       return;
     }
-    
-  
+
     const userId = loginData.user?.id;
 
-if (!userId) {
-  setAlertMessage('No user found.');
-  setShowAlert(true);
-  return;
-}
+    if (!userId) {
+      setAlertMessage('No user found.');
+      setShowAlert(true);
+      return;
+    }
 
-// 🔍 Fetch user's role from users table
-const { data: profile, error: profileError } = await supabase
-  .from('users')
-  .select('role')
-  .eq('id', userId)
-  .single();
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
 
-if (profileError || !profile) {
-  setAlertMessage('Failed to fetch user role.');
-  setShowAlert(true);
-  return;
-}
+    if (profileError || !profile) {
+      setAlertMessage('Failed to fetch user role.');
+      setShowAlert(true);
+      return;
+    }
 
-await supabase.from('login_logs').insert([
-  {
-    user_id: userId,
-    email: username,
-    role: profile.role, // ensure this is 'admin' or 'user'
-    logged_in_at: new Date().toISOString(),
-    expire_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // optional
-  }
-]);
+    await supabase.from('login_logs').insert([
+      {
+        user_id: userId,
+        email: username,
+        role: profile.role,
+        logged_in_at: new Date().toISOString(),
+        expire_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      }
+    ]);
 
-console.log("✅ Logged in role:", profile.role);
+    localStorage.setItem('email', username);
 
-localStorage.setItem('email', username);
-
-
-
-if (profile.role === 'admin') {
-  navigation.push('/dashboard', 'forward', 'replace');
-} else {
-  navigation.push('/welcome', 'forward', 'replace');
-}
+    if (profile.role === 'admin') {
+      navigation.push('/dashboard', 'forward', 'replace');
+    } else {
+      navigation.push('/welcome', 'forward', 'replace');
+    }
   };
 
   return (
@@ -99,13 +92,13 @@ if (profile.role === 'admin') {
             <IonTitle
               style={{
                 fontWeight: '900',
-                fontSize: '30px',
+                fontSize: '32px',
                 color: '#ffffff',
-                letterSpacing: '0.5px',
-                textTransform: 'capitalize'
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
               }}
             >
-              Log In
+              UserTrack System
             </IonTitle>
           </div>
         </IonToolbar>
@@ -114,20 +107,25 @@ if (profile.role === 'admin') {
       <IonContent fullscreen>
         <div
           style={{
-            background: '#105796',
+            background: 'linear-gradient(135deg, #1f4068, #2a5298)',
             display: 'flex',
-            height: '89.4vh',
+            height: '100vh',
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
             textAlign: 'center',
           }}
         >
-          <IonAvatar style={{ width: '150px', height: '150px', marginBottom: '20px' }}>
-            <img alt="User Avatar" src="https://heucollege.edu.vn/upload/2025/02/avatar-capybara-cute-4.webp" />
-          </IonAvatar>
+          <h2 style={{
+            fontWeight: '900',
+            fontSize: '32px',
+            color: '#ffffff',
+            marginTop: '-100px',
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+          }}>Login</h2>
 
-          <IonItem lines="inset" className="ion-margin-vertical" color="light" style={{ width: '300px', maxWidth: '90%', borderRadius: '10px' }}>
+          <IonItem lines="inset" className="ion-margin-vertical" style={{ width: '300px', maxWidth: '90%', borderRadius: '10px', backgroundColor: '#f4f4f4' }}>
             <IonLabel position="floating" color="primary">Email</IonLabel>
             <IonInput
               value={username}
@@ -138,7 +136,7 @@ if (profile.role === 'admin') {
             />
           </IonItem>
 
-          <IonItem lines="inset" className="ion-margin-bottom" color="light" style={{ width: '300px', maxWidth: '90%', borderRadius: '10px' }}>
+          <IonItem lines="inset" className="ion-margin-bottom" style={{ width: '300px', maxWidth: '90%', borderRadius: '10px', backgroundColor: '#f4f4f4' }}>
             <IonLabel position="floating" color="primary">Password</IonLabel>
             <IonInput
               type="password"
@@ -153,7 +151,7 @@ if (profile.role === 'admin') {
           <IonButton
             onClick={doLogin}
             expand="block"
-            color="primary"
+            color="tertiary"
             className="ion-margin-bottom"
             style={{ width: '300px', maxWidth: '90%', fontWeight: 'bold' }}
           >
