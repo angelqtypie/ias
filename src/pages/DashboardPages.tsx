@@ -102,7 +102,7 @@ const DashboardPage: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <IonButton expand="block" color="medium" routerLink="/auth" style={{ marginBottom: '16px' }}>
+        <IonButton expand="block" color="medium" routerLink="/ias/auth" style={{ marginBottom: '16px' }}>
           🔙 Back to Login
         </IonButton>
 
