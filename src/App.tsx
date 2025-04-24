@@ -31,20 +31,20 @@ const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
       <IonRouterOutlet>
-        <Route exact path="/auth">
+        <Route exact path="/ias/auth">
           <AuthPage />
         </Route>
-        <Route exact path="/register">
+        <Route exact path="/ias/register">
           <CreatePage />
         </Route>
-        <Route exact path="/dashboard">
+        <Route exact path="/ias/dashboard">
   <DashboardPage />
 </Route>
-<Route exact path="/welcome">
+<Route exact path="/ias/welcome">
   <WelcomePage />
 </Route>
         <Route exact path="/">
-          <Redirect to="/auth" />
+          <Redirect to="/ias/auth" />
         </Route>
       </IonRouterOutlet>
     </IonReactRouter>

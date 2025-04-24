@@ -78,9 +78,9 @@ const AuthPage: React.FC = () => {
     localStorage.setItem('email', username);
 
     if (profile.role === 'admin') {
-      navigation.push('/dashboard', 'forward', 'replace');
+      navigation.push('/ias/dashboard', 'forward', 'replace');
     } else {
-      navigation.push('/welcome', 'forward', 'replace');
+      navigation.push('/ias/welcome', 'forward', 'replace');
     }
   };
 
@@ -159,7 +159,7 @@ const AuthPage: React.FC = () => {
           </IonButton>
 
           <IonButton
-            routerLink="/register"
+            routerLink="/ias/register"
             expand="block"
             fill="clear"
             shape="round"
