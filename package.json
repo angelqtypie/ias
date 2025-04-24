@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "homepage": "https://angelqtypie.github.io/ias",
+  "homepage": "https://angelqtypie.github.io/ias/auth",
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
