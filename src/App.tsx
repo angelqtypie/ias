@@ -1,6 +1,6 @@
 import { Redirect, Route } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact} from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
+import { IonReactHashRouter } from '@ionic/react-router'; 
 
 
 import AuthPage from './pages/AuthPages';
@@ -26,7 +26,7 @@ setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <IonReactRouter>
+    <IonReactHashRouter>
       <IonRouterOutlet>
         <Route exact path="/auth">
           <AuthPage />
@@ -44,7 +44,7 @@ const App: React.FC = () => (
           <Redirect to="/auth" />
         </Route>
       </IonRouterOutlet>
-    </IonReactRouter>
+      </IonReactHashRouter>
   </IonApp>
 );
 
