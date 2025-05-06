@@ -1,4 +1,4 @@
-import { Redirect, Route } from 'react-router-dom';
+import { Redirect, Route, HashRouter } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 
@@ -29,6 +29,7 @@ setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
+    <HashRouter>
     <IonReactRouter>
       <IonRouterOutlet>
         <Route exact path="/ias/auth">
@@ -48,6 +49,7 @@ const App: React.FC = () => (
         </Route>
       </IonRouterOutlet>
     </IonReactRouter>
+    </HashRouter>
   </IonApp>
 );
 
