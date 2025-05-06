@@ -117,7 +117,7 @@ const AuthPage: React.FC = () => {
           }}
         >
           <h2 style={{
-            fontWeight: '900',
+            fontWeight: 'bold',
             fontSize: '32px',
             color: '#ffffff',
             marginTop: '-100px',

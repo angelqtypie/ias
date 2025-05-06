@@ -2,7 +2,7 @@ import {
   IonPage, IonContent, IonHeader, IonToolbar, IonTitle,
   IonButton, IonText, IonCard, IonCardHeader, IonCardTitle,
   IonCardContent, IonGrid, IonRow, IonCol
-} from '@ionic/react';  
+} from '@ionic/react';
 import { useIonRouter } from '@ionic/react';
 import React, { useEffect, useState } from 'react';
 
@@ -13,9 +13,11 @@ const WelcomePage: React.FC = () => {
   useEffect(() => {
     const email = localStorage.getItem('email');
     if (email) {
-      setUsername(email);
+      const name = email.split('@')[0];  // get the part before '@'
+      setUsername(name.charAt(0).toUpperCase() + name.slice(1)); // capitalize first letter
     }
   }, []);
+  
 
   return (
     <IonPage>
@@ -25,13 +27,14 @@ const WelcomePage: React.FC = () => {
             <IonTitle
               style={{
                 fontWeight: '900',
-                fontSize: '32px',
+                fontSize: '40px',
                 color: '#ffffff',
-                letterSpacing: '1px',
+                letterSpacing: '2px',
                 textTransform: 'uppercase',
+                textShadow: '3px 3px 6px rgba(0, 0, 0, 0.5)',
               }}
             >
-              Welcome
+              Welcome!
             </IonTitle>
           </div>
         </IonToolbar>
@@ -40,34 +43,56 @@ const WelcomePage: React.FC = () => {
       <IonContent fullscreen>
         <div
           style={{
-            background: 'linear-gradient(135deg, #1f4068, #2a5298)',  // Same gradient as in AuthPage
+            background: 'linear-gradient(135deg,rgb(47, 67, 156),rgba(76, 0, 255, 0.53))', // Warm gradient
             display: 'flex',
             height: '100vh',
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
             textAlign: 'center',
+            padding: '30px',
+            boxSizing: 'border-box',
           }}
         >
-          <IonCard style={{ maxWidth: '500px', margin: 'auto', padding: '20px' }}>
+          <IonCard
+            style={{
+              maxWidth: '500px',
+              margin: 'auto',
+              padding: '30px',
+              borderRadius: '12px',
+              boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
+              backgroundColor: '#ffffff',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.2)';
+            }}
+          >
             <IonCardHeader>
               <IonCardTitle
                 className="ion-text-center"
                 style={{
                   fontWeight: '900',
-                  fontSize: '24px',
-                  color: 'dark',
+                  fontSize: '28px',
+                  color: 'purple',
                   letterSpacing: '1px',
-                  marginBottom: '10px',
+                  marginBottom: '15px',
                 }}
               >
                 👋 Hello, {username || 'User'}!
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
-              <IonText className="ion-text-center" style={{ color: 'dark' }}>
-                <p>Welcome to your dashboard. Enjoy your personalized experience!</p>
-                <p>We're glad you're here, {username} 😊</p>
+              <IonText className="ion-text-center" style={{ color: '#333' }}>
+                <p style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                  Welcome to your personalized dashboard! 🚀
+                </p>
+                <p style={{ fontSize: '14px' }}>Enjoy exploring your new features and tools!</p>
               </IonText>
 
               <IonGrid>
@@ -75,11 +100,23 @@ const WelcomePage: React.FC = () => {
                   <IonCol size="auto">
                     <IonButton
                       expand="block"
-                      color="medium"
+                      color="light"
                       onClick={() => router.push('/ias/auth')}
                       style={{
                         fontWeight: 'bold',
-                        backgroundColor: '#f4f4f4',  // Light color button for contrast
+                        backgroundColor: '#FF6347', // Contrasting button color
+                        color: '#fff',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FF4500';
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FF6347';
+                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
                       🔙 Back to Login
