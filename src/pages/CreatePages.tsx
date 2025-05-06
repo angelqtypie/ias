@@ -209,7 +209,7 @@ const CreatePage: React.FC = () => {
                 </IonCol>
 
                 <IonCol size="12" style={{ marginTop: '10px' }}>
-                  <IonButton routerLink="/ias/auth" expand="block" fill="clear" shape="round" color="light">
+                  <IonButton routerLink="/auth" expand="block" fill="clear" shape="round" color="light">
                     Already have an account? Sign in
                   </IonButton>
                 </IonCol>
@@ -301,7 +301,7 @@ const CreatePage: React.FC = () => {
           <p>Please check your email to verify your account.</p>
         </IonText>
         <IonButton
-          routerLink="/ias/auth"
+          routerLink="/auth"
           routerDirection="back"
           color="primary"
           style={{

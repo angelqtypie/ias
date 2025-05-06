@@ -101,7 +101,7 @@ const WelcomePage: React.FC = () => {
                     <IonButton
                       expand="block"
                       color="light"
-                      onClick={() => router.push('/ias/auth')}
+                      onClick={() => router.push('/auth')}
                       style={{
                         fontWeight: 'bold',
                         backgroundColor: '#FF6347', // Contrasting button color

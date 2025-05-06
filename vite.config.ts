@@ -10,10 +10,11 @@ export default defineConfig({
     react(),
     legacy()
   ],
-  base:'/ias/',
+  base: process.env.NODE_ENV === 'production' ? '/ias/' : '/',
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
   }
 })
+
