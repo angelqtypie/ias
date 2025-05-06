@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     legacy()
   ],
-  base:'ias/auth',
+  base:'/ias/',
   test: {
     globals: true,
     environment: 'jsdom',
