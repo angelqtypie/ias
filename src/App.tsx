@@ -30,7 +30,7 @@ setupIonicReact();
 const App: React.FC = () => (
   <IonApp>
     <HashRouter>
-    <IonReactRouter>
+
       <IonRouterOutlet>
         <Route exact path="/auth">
           <AuthPage />
@@ -48,7 +48,7 @@ const App: React.FC = () => (
           <Redirect to="/auth" />
         </Route>
       </IonRouterOutlet>
-    </IonReactRouter>
+   
     </HashRouter>
   </IonApp>
 );
