@@ -1,15 +1,12 @@
-import { Redirect, Route, HashRouter } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import { Redirect, Route } from 'react-router-dom';
+import { IonApp, IonRouterOutlet, setupIonicReact} from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
+
 
 import AuthPage from './pages/AuthPages';
 import CreatePage from './pages/CreatePages';
 import DashboardPage from './pages/DashboardPages';
 import WelcomePage from './pages/WelcomePages';
-
-
-
-
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -29,8 +26,7 @@ setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <HashRouter>
-
+    <IonReactRouter>
       <IonRouterOutlet>
         <Route exact path="/auth">
           <AuthPage />
@@ -39,17 +35,16 @@ const App: React.FC = () => (
           <CreatePage />
         </Route>
         <Route exact path="/dashboard">
-  <DashboardPage />
-</Route>
-<Route exact path="/welcome">
-  <WelcomePage />
-</Route>
+          <DashboardPage />
+        </Route>
+        <Route exact path="/welcome">
+          <WelcomePage />
+        </Route>
         <Route exact path="/">
           <Redirect to="/auth" />
         </Route>
       </IonRouterOutlet>
-   
-    </HashRouter>
+    </IonReactRouter>
   </IonApp>
 );
 
