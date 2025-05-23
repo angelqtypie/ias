@@ -21,6 +21,8 @@ import '@ionic/react/css/display.css';
 import '@ionic/react/css/palettes/dark.system.css';
 
 import './theme/variables.css';
+import ReportIncident from './pages/ReportIncident';
+import BIAReportsPage from './pages/BiaReportPage';
 
 setupIonicReact();
 
@@ -40,6 +42,13 @@ const App: React.FC = () => (
         <Route exact path="/welcome">
           <WelcomePage />
         </Route>
+        <Route exact path="/report-incidents">
+          <ReportIncident />
+        </Route>
+                <Route exact path="/bia-reports">
+          <BIAReportsPage />
+        </Route>
+         
         <Route exact path="/">
           <Redirect to="/auth" />
         </Route>

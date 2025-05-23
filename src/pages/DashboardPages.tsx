@@ -1,212 +1,172 @@
+// src/pages/AdminDashboard.tsx
 import React, { useEffect, useState } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonCard, IonCardHeader, IonCardTitle, IonCardContent,
-  IonList, IonItem, IonLabel, IonGrid, IonCol, IonRow,
-  IonText, IonSpinner, IonButton, IonIcon
+  IonButtons, IonButton, IonIcon, IonText, IonModal, IonInput, IonSelect, IonSelectOption
 } from '@ionic/react';
-import { trash, logOutOutline, refreshOutline } from 'ionicons/icons';
+import { logOutOutline, eyeOutline } from 'ionicons/icons';
+import { useIonRouter, useIonToast, useIonAlert } from '@ionic/react';
 import { supabase } from '../utils/supabaseClient';
-import '../components/DashboardPage.css';  // Import the enhanced CSS file
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
 
-const DashboardPage: React.FC = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [userLogs, setUserLogs] = useState<any[]>([]);
-  const [adminLogs, setAdminLogs] = useState<any[]>([]);
-  const [userLogCount, setUserLogCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [userCount, setUserCount] = useState(0);
-  const [adminCount, setAdminCount] = useState(0);
+const AdminDashboard: React.FC = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeView, setActiveView] = useState<'dashboard' | 'incidents' | 'bia' | 'biaReports'>('dashboard');
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [biaReports, setBiaReports] = useState<any[]>([]);
+  const [presentAlert] = useIonAlert();
+  const [presentToast] = useIonToast();
+  const router = useIonRouter();
+  const [selectedIncident, setSelectedIncident] = useState<any>(null);
+  const [searchText, setSearchText] = useState('');
+  const [statusOptions] = useState(['Open', 'Investigating', 'Resolved']);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    const now = new Date();
-    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-
-    await supabase.from('login_logs').delete().lt('expire_at', now.toISOString());
-
-    const { data: logs } = await supabase
-      .from('login_logs')
-      .select('id, email, logged_in_at, role')
-      .order('logged_in_at', { ascending: false });
-
-    const { data: profiles } = await supabase
-      .from('users')
-      .select('full_name, email, user_password');
-
-    const mergedLogs = (logs || []).map(log => {
-      const user = profiles?.find(u => u.email.toLowerCase() === log.email.toLowerCase());
-      return {
-        ...log,
-        full_name: user?.full_name || '',
-        user_password: user?.user_password || ''
-      };
-    });
-
-    const recentUserLogs = mergedLogs.filter(
-      log => log.role === 'user' && log.logged_in_at >= tenMinutesAgo
-    );
-
-    const adminLogs = mergedLogs.filter(log => log.role === 'admin');
-
-    const uniqueTodayUsers = new Set(
-      mergedLogs
-        .filter(log => new Date(log.logged_in_at) >= startOfDay)
-        .map(log => log.email)
-    );
-
-    setUserLogs(recentUserLogs);
-    setAdminLogs(adminLogs);
-    setUserLogCount(uniqueTodayUsers.size);
-    setLoading(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('email');
+    router.push('/auth');
   };
 
-  const fetchUsers = async () => {
-    const { data } = await supabase
+  const fetchInitialData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
       .from('users')
-      .select('full_name, email, role, created_at, user_password')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') return;
+    setIsAdmin(true);
+
+    const { data: incidentsData } = await supabase
+      .from('incidents')
+      .select('*')
       .order('created_at', { ascending: false });
 
-    setUsers(data || []);
-    const usersOnly = data?.filter(user => user.role === 'user').length || 0;
-    const adminsOnly = data?.filter(user => user.role === 'admin').length || 0;
-    setUserCount(usersOnly);
-    setAdminCount(adminsOnly);
-  };
+    const { data: biaData } = await supabase
+      .from('bia_reports')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  const deleteLog = async (logId: string) => {
-    await supabase.from('login_logs').delete().eq('id', logId);
-    fetchDashboardData();
+    setIncidents(incidentsData || []);
+    setBiaReports(biaData || []);
   };
-  
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchUsers();
-    const interval = setInterval(() => {
-      fetchDashboardData();
-    }, 10000);
-    return () => clearInterval(interval);
+    fetchInitialData();
   }, []);
 
-  const renderLogItem = (log: any) => (
-    <IonItem key={log.id} lines="none">
-      <IonLabel>
-        <h2>{log.full_name || log.email}</h2>
-        <p>{log.email}</p>
-        <p>🕓 {new Date(log.logged_in_at).toLocaleString()}</p>
-        {log.user_password && (
-          <p><strong>Hashed Password:</strong><br /> {log.user_password}</p>
-        )}
-      </IonLabel>
-      <IonButton fill="clear" color="danger" onClick={() => deleteLog(log.id)}>
-        <IonIcon icon={trash} />
-      </IonButton>
-    </IonItem>
+  const filteredIncidents = incidents.filter(i => i.title.toLowerCase().includes(searchText.toLowerCase()));
+
+  const IncidentManagement = () => (
+    <div>
+      <IonButton size="small" onClick={() => setActiveView('dashboard')}>← Back</IonButton>
+      <IonInput placeholder="Search Incidents" value={searchText} onIonChange={e => setSearchText(e.detail.value ?? '')} />
+      {filteredIncidents.map((incident) => (
+        <div key={incident.id} style={{ padding: 10, border: '1px solid #ccc', marginBottom: 10 }}>
+          <h3>{incident.title}</h3>
+          <p>{incident.description}</p>
+          <p>Status: <strong>{incident.status}</strong></p>
+          <p>Severity: <strong>{incident.severity}</strong></p>
+          <IonSelect interface="popover" value={incident.status} onIonChange={async (e) => {
+            const newStatus = e.detail.value;
+            await supabase.from('incidents').update({ status: newStatus }).eq('id', incident.id);
+            setIncidents(incidents.map(i => i.id === incident.id ? { ...i, status: newStatus } : i));
+            presentToast({ message: 'Status updated', duration: 1500, color: 'success' });
+          }}>
+            {statusOptions.map(opt => (
+              <IonSelectOption key={opt} value={opt}>{opt}</IonSelectOption>
+            ))}
+          </IonSelect>
+          <IonButton size="small" onClick={() => setSelectedIncident(incident)}>
+            <IonIcon icon={eyeOutline} /> View Details
+          </IonButton>
+        </div>
+      ))}
+      <IonModal isOpen={!!selectedIncident} onDidDismiss={() => setSelectedIncident(null)}>
+        <div style={{ padding: 20 }}>
+          <h2>{selectedIncident?.title}</h2>
+          <p>{selectedIncident?.description}</p>
+          <p><strong>Severity:</strong> {selectedIncident?.severity}</p>
+          <p><strong>Status:</strong> {selectedIncident?.status}</p>
+          <p><strong>Created:</strong> {new Date(selectedIncident?.created_at).toLocaleString()}</p>
+          <IonButton size="small" expand="block" onClick={() => setSelectedIncident(null)}>Close</IonButton>
+        </div>
+      </IonModal>
+    </div>
   );
 
+  const SummaryWidgets = () => {
+    const chartData = [
+      { status: 'Open', count: incidents.filter(i => i.status === 'Open').length },
+      { status: 'Investigating', count: incidents.filter(i => i.status === 'Investigating').length },
+      { status: 'Resolved', count: incidents.filter(i => i.status === 'Resolved').length }
+    ];
+
+    return (
+      <div style={{ marginTop: 20, height: 300 }}>
+        <h3>Dashboard Summary</h3>
+        <ResponsiveContainer width="100%" height="80%">
+          <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="status" />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Bar dataKey="count" fill="#0070f3" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+        <p>Total BIA Reports: {biaReports.length}</p>
+      </div>
+    );
+  };
+
+  const DashboardMenu = () => (
+  <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', marginTop: '1rem' }}>
+    <IonButton size="default" fill="outline" onClick={() => setActiveView('incidents')}>📋 Manage Incidents</IonButton>
+    <IonButton size="default" fill="outline" onClick={() => setActiveView('bia')}>📝 Create BIA Report</IonButton>
+    <IonButton size="default" fill="outline" onClick={() => setActiveView('biaReports')}>📄 View BIA Reports</IonButton>
+  </div>
+);
+
+  const BIAReportForm = () => <div><IonText color="medium">[Form placeholder]</IonText></div>;
+  const BIAReportsView = () => <div><IonText color="medium">[Reports placeholder]</IonText></div>;
+
   return (
-    <IonPage >
+    <IonPage>
       <IonHeader>
-        <IonToolbar className="dashboard-header">
-          <IonTitle>📊 Admin Dashboard</IonTitle>
-          <IonButton slot="end" fill="clear" color="light" onClick={fetchDashboardData}>
-            <IonIcon icon={refreshOutline} />
-          </IonButton>
+        <IonToolbar>
+          <IonTitle>🛠️ Admin Panel</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={handleLogout} color="dark">
+              <IonIcon icon={logOutOutline} slot="end" /> Logout
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding custom-bg">
-        <IonButton expand="block" color="medium" routerLink="/auth" style={{ marginBottom: '20px' }}>
-          <IonIcon icon={logOutOutline} slot="start" />
-          Back to Login
-        </IonButton>
-
-        <IonGrid>
-          <IonRow>
-            {/* Overview */}
-            <IonCol size="12" sizeMd="6">
-              <IonCard className="dashboard-card">
-                <IonCardHeader>
-                  <IonCardTitle>📈 Overview</IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <p>👤 Users: <strong>{userCount}</strong></p>
-                  <p>🛡️ Admins: <strong>{adminCount}</strong></p>
-                  <p>📅 Logins Today: <strong>{userLogCount}</strong></p>
-                </IonCardContent>
-              </IonCard>
-            </IonCol>
-
-            {/* Registered Admins */}
-            <IonCol size="12" sizeMd="6">
-              <IonCard className="dashboard-card">
-                <IonCardHeader>
-                  <IonCardTitle>👥 Registered Admins</IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonList>
-                    {users.filter(u => u.role === 'admin').length === 0 ? (
-                      <IonText>No admins registered.</IonText>
-                    ) : (
-                      users.filter(u => u.role === 'admin').map((user, index) => (
-                        <IonItem key={index} lines="none">
-                          <IonLabel>
-                            <h2>{user.full_name || 'Unnamed'}</h2>
-                            <p>{user.email}</p>
-                            <p>🕑 {new Date(user.created_at).toLocaleString()}</p>
-                            <p><strong>Password:</strong> {user.user_password}</p>
-                          </IonLabel>
-                        </IonItem>
-                      ))
-                    )}
-                  </IonList>
-                </IonCardContent>
-              </IonCard>
-            </IonCol>
-
-            {/* User Logins */}
-            <IonCol size="12" sizeMd="6">
-              <IonCard className="dashboard-card">
-                <IonCardHeader>
-                  <IonCardTitle>🧑‍💼 Recent User Logins</IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  {loading ? (
-                    <IonSpinner name="dots" />
-                  ) : userLogs.length === 0 ? (
-                    <IonText>No recent user logins.</IonText>
-                  ) : (
-                    <IonList>{userLogs.map(renderLogItem)}</IonList>
-                  )}
-                </IonCardContent>
-              </IonCard>
-            </IonCol>
-
-            {/* Admin Logins */}
-            <IonCol size="12" sizeMd="6">
-              <IonCard className="dashboard-card">
-                <IonCardHeader>
-                  <IonCardTitle>🛡️ Admin Login Logs</IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  {loading ? (
-                    <IonSpinner name="dots" />
-                  ) : adminLogs.length === 0 ? (
-                    <IonText>No admin logins found.</IonText>
-                  ) : (
-                    <IonList>{adminLogs.map(renderLogItem)}</IonList>
-                  )}
-                </IonCardContent>
-              </IonCard>
-            </IonCol>
-          </IonRow>
-        </IonGrid>
+      <IonContent className="ion-padding">
+        {!isAdmin ? (
+          <IonText color="danger"><h3>Access Denied: Admins Only</h3></IonText>
+        ) : (
+          <>
+            {activeView === 'dashboard' && (
+              <>
+                <DashboardMenu />
+                <SummaryWidgets />
+              </>
+            )}
+            {activeView === 'incidents' && <IncidentManagement />}
+            {activeView === 'bia' && <BIAReportForm />}
+            {activeView === 'biaReports' && <BIAReportsView />}
+          </>
+        )}
       </IonContent>
     </IonPage>
   );
 };
 
-export default DashboardPage;
+export default AdminDashboard;

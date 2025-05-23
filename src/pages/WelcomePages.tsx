@@ -1,132 +1,108 @@
-import {
-  IonPage, IonContent, IonHeader, IonToolbar, IonTitle,
-  IonButton, IonText, IonCard, IonCardHeader, IonCardTitle,
-  IonCardContent, IonGrid, IonRow, IonCol
-} from '@ionic/react';
-import { useIonRouter } from '@ionic/react';
+// File: src/pages/WelcomePage.tsx
+
 import React, { useEffect, useState } from 'react';
+import {
+  IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonButton,
+  IonText, IonGrid, IonRow, IonCol, IonIcon, IonButtons, IonCard, IonCardHeader, IonCardTitle
+} from '@ionic/react';
+import {
+  logOutOutline, alertCircleOutline, personCircleOutline,
+  settingsOutline, helpCircleOutline
+} from 'ionicons/icons';
+import { useIonRouter } from '@ionic/react';
+import { supabase } from '../utils/supabaseClient';
 
 const WelcomePage: React.FC = () => {
   const router = useIonRouter();
-  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
+  const quotes = [
+    "Security is not a product, it's a process.",
+    "The best way to predict the future is to secure it.",
+    "Safety is something that happens between your ears, not something you hold in your hands."
+  ];
+  const [quote, setQuote] = useState('');
 
   useEffect(() => {
-    const email = localStorage.getItem('email');
-    if (email) {
-      const name = email.split('@')[0];  // get the part before '@'
-      setUsername(name.charAt(0).toUpperCase() + name.slice(1)); // capitalize first letter
-    }
+    const fetchUser = async () => {
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (user) {
+        const name = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'User';
+        setFullName(name.charAt(0).toUpperCase() + name.slice(1));
+      }
+    };
+    fetchUser();
+    setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
   }, []);
-  
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('email');
+    router.push('/auth');
+  };
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="dark">
-          <div style={{ textAlign: 'center', padding: '10px 0' }}>
-            <IonTitle
-              style={{
-                fontWeight: '900',
-                fontSize: '40px',
-                color: '#ffffff',
-                letterSpacing: '2px',
-                textTransform: 'uppercase',
-                textShadow: '3px 3px 6px rgba(0, 0, 0, 0.5)',
-              }}
-            >
-              Welcome!
-            </IonTitle>
-          </div>
+        <IonToolbar color="primary">
+          <IonTitle>
+            Welcome, {fullName || 'User'}
+          </IonTitle>
+          <IonButtons slot="end">
+<IonButton onClick={handleLogout} color="light">
+  <IonIcon icon={logOutOutline} slot="start" />
+  Logout
+</IonButton>
+
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen>
-        <div
-          style={{
-            background: 'linear-gradient(135deg,rgb(47, 67, 156),rgba(76, 0, 255, 0.53))', // Warm gradient
-            display: 'flex',
-            height: '100vh',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            textAlign: 'center',
-            padding: '30px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <IonCard
-            style={{
-              maxWidth: '500px',
-              margin: 'auto',
-              padding: '30px',
-              borderRadius: '12px',
-              boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
-              backgroundColor: '#ffffff',
-              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.2)';
-            }}
-          >
-            <IonCardHeader>
-              <IonCardTitle
-                className="ion-text-center"
-                style={{
-                  fontWeight: '900',
-                  fontSize: '28px',
-                  color: 'purple',
-                  letterSpacing: '1px',
-                  marginBottom: '15px',
-                }}
-              >
-                👋 Hello, {username || 'User'}!
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonText className="ion-text-center" style={{ color: '#333' }}>
-                <p style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                  Welcome to your personalized dashboard! 🚀
-                </p>
-                <p style={{ fontSize: '14px' }}>Enjoy exploring your new features and tools!</p>
-              </IonText>
+      <IonContent fullscreen className="ion-padding">
+        <IonGrid>
+          <IonRow className="ion-justify-content-center ion-text-center ion-margin-top">
+            <IonCol size="12" sizeMd="8" sizeLg="6">
+              <h2 style={{ fontWeight: 700, fontSize: '26px' }}>👋 Hello, {fullName || 'User'}!</h2>
+              <p style={{ fontSize: '16px', margin: '10px 0', fontStyle: 'italic' }}>
+                “{quote}”
+              </p>
 
-              <IonGrid>
-                <IonRow className="ion-justify-content-center ion-padding-top">
-                  <IonCol size="auto">
-                    <IonButton
-                      expand="block"
-                      color="light"
-                      onClick={() => router.push('/auth')}
-                      style={{
-                        fontWeight: 'bold',
-                        backgroundColor: '#FF6347', // Contrasting button color
-                        color: '#fff',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#FF4500';
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#FF6347';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      🔙 Back to Login
+              <IonButton
+                routerLink="/report-incidents"
+                color="tertiary"
+                expand="block"
+                className="ion-margin-top"
+              >
+                <IonIcon icon={alertCircleOutline} slot="start" />
+                Report an Incident
+              </IonButton>
+
+              <IonGrid className="ion-margin-top">
+                <IonRow>
+                  <IonCol>
+                    <IonButton expand="block" fill="outline" routerLink="/profile">
+                      <IonIcon icon={personCircleOutline} slot="start" />
+                      Profile
+                    </IonButton>
+                  </IonCol>
+                  <IonCol>
+                    <IonButton expand="block" fill="outline" routerLink="/settings">
+                      <IonIcon icon={settingsOutline} slot="start" />
+                      Settings
+                    </IonButton>
+                  </IonCol>
+                  <IonCol>
+                    <IonButton expand="block" fill="outline" routerLink="/support">
+                      <IonIcon icon={helpCircleOutline} slot="start" />
+                      Support
                     </IonButton>
                   </IonCol>
                 </IonRow>
               </IonGrid>
-            </IonCardContent>
-          </IonCard>
-        </div>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
       </IonContent>
     </IonPage>
   );
