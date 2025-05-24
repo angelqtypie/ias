@@ -1,5 +1,3 @@
-// File: src/pages/ReportIncident.tsx
-
 import React, { useState } from 'react';
 import {
   IonPage,
@@ -19,10 +17,13 @@ import {
   IonCard,
   IonCardHeader,
   IonCardTitle,
-  IonCardContent
+  IonCardContent,
+  IonButtons,
+  IonBackButton,
 } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, logOutOutline } from 'ionicons/icons';
 import { supabase } from '../utils/supabaseClient';
+import { useIonRouter } from '@ionic/react';
 
 const ReportIncident: React.FC = () => {
   const [title, setTitle] = useState<string>('');
@@ -30,6 +31,7 @@ const ReportIncident: React.FC = () => {
   const [severity, setSeverity] = useState<string>('');
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const router = useIonRouter();
 
   const handleSubmit = async () => {
     if (!title || !description || !severity) {
@@ -48,7 +50,7 @@ const ReportIncident: React.FC = () => {
         severity,
         status: 'open',
         reported_by: userId,
-      }
+      },
     ]);
 
     if (error) {
@@ -62,17 +64,35 @@ const ReportIncident: React.FC = () => {
     setShowToast(true);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('email');
+    router.push('/auth');
+  };
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar color="danger">
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/" />
+          </IonButtons>
           <IonTitle>🚨 Report Security Issue</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={handleLogout} color="light" fill="clear">
+              <IonIcon icon={logOutOutline} />
+              Logout
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding" style={{
-        background: 'linear-gradient(to bottom right, #fef3c7, #fcd34d)',
-        minHeight: '100vh'
-      }}>
+      <IonContent
+        className="ion-padding"
+        style={{
+          background: 'linear-gradient(to bottom right, #fef3c7, #fcd34d)',
+          minHeight: '100vh',
+        }}
+      >
         <IonCard color="light" className="ion-padding">
           <IonCardHeader>
             <IonCardTitle>
@@ -82,7 +102,11 @@ const ReportIncident: React.FC = () => {
           <IonCardContent>
             <IonItem className="ion-margin-bottom">
               <IonLabel>What happened?</IonLabel>
-              <IonSelect placeholder="Choose an incident type" value={title} onIonChange={e => setTitle(e.detail.value)}>
+              <IonSelect
+                placeholder="Choose an incident type"
+                value={title}
+                onIonChange={(e) => setTitle(e.detail.value)}
+              >
                 <IonSelectOption value="Unauthorized Access">Unauthorized Access</IonSelectOption>
                 <IonSelectOption value="Data Breach">Data Breach</IonSelectOption>
                 <IonSelectOption value="Phishing Attempt">Phishing Attempt</IonSelectOption>
@@ -93,7 +117,11 @@ const ReportIncident: React.FC = () => {
 
             <IonItem className="ion-margin-bottom">
               <IonLabel>How severe is it?</IonLabel>
-              <IonSelect placeholder="Select severity level" value={severity} onIonChange={e => setSeverity(e.detail.value)}>
+              <IonSelect
+                placeholder="Select severity level"
+                value={severity}
+                onIonChange={(e) => setSeverity(e.detail.value)}
+              >
                 <IonSelectOption value="low">Low</IonSelectOption>
                 <IonSelectOption value="medium">Medium</IonSelectOption>
                 <IonSelectOption value="high">High</IonSelectOption>
@@ -102,7 +130,11 @@ const ReportIncident: React.FC = () => {
 
             <IonItem className="ion-margin-bottom">
               <IonLabel position="floating">Additional details (optional)</IonLabel>
-              <IonTextarea autoGrow value={description} onIonChange={e => setDescription(e.detail.value!)} />
+              <IonTextarea
+                autoGrow
+                value={description}
+                onIonChange={(e) => setDescription(e.detail.value!)}
+              />
             </IonItem>
 
             <IonButton expand="block" color="danger" onClick={handleSubmit} className="ion-margin-top">

@@ -1,81 +1,128 @@
-/* DashboardPage.css */
+/* 📁 src/components/AdminDashboard.css */
 
-.custom-bg {
-    background: linear-gradient(to bottom right, #ff7e5f, #feb47b); /* Warm gradient background */
-    min-height: 100vh; /* Ensure it covers the whole screen */
+/* Margin and Padding */
+.ion-margin-bottom {
+  margin-bottom: 16px !important;
+}
+
+.ion-padding {
+  padding: 16px !important;
+}
+
+/* Typography */
+ion-card-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Card Styling */
+ion-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  padding: 4px;
+  transition: box-shadow 0.3s ease;
+}
+
+ion-card:hover {
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+
+/* Textareas */
+ion-textarea {
+  font-size: 14px !important;
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 6px;
+  transition: background 0.3s ease;
+}
+
+ion-textarea:focus-within {
+  background: #fffbe6;
+}
+
+/* Buttons */
+ion-button {
+  margin-top: 10px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+ion-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+/* Chart Container */
+.recharts-wrapper {
+  direction: ltr;
+  overflow-x: auto;
+}
+
+/* Status Coloring */
+.status-open {
+  color: #eb445a;
+  font-weight: bold;
+}
+
+.status-in-progress {
+  color: #ffc409;
+  font-weight: bold;
+}
+
+.status-resolved {
+  color: #2dd36f;
+  font-weight: bold;
+}
+
+/* Controls Container */
+.dashboard-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+@media screen and (max-width: 480px) {
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
   }
-  
-  .dashboard-card {
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15); /* Stronger shadow for depth */
-    background-color: #ffffff; /* White background for cards */
-    padding: 20px;
-    margin: 20px 0;
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Add animation on hover */
-  }
-  
-  .dashboard-card:hover {
-    transform: translateY(-5px); /* Slight lifting effect */
-    box-shadow: 0 12px 50px rgba(0, 0, 0, 0.2); /* Stronger shadow on hover */
-  }
-  
-  .dashboard-card .ion-card-header {
-    background-color: #f0f4f8; /* Soft light gray background for headers */
-    border-radius: 10px 10px 0 0; /* Rounded corners at the top */
-    padding: 10px;
-  }
-  
-  .dashboard-card .ion-card-title {
-    color: #333; /* Darker text for titles */
-    font-weight: bold;
-    font-size: 1.3rem; /* Slightly larger font size */
-  }
-  
-  .dashboard-card-content {
-    padding: 10px;
-    color: #555; /* Slightly gray text for content */
-  }
-  
-  .refresh-btn {
-    color: #fff;
-    background-color: #3880ff;
-    border-radius: 50%;
-  }
-  
-  .dashboard-header {
-    background-color: #ff3300; /* Use gradient color for header */
-    color: rgb(0, 0, 0);
-    padding: 10px;
-  }
-  
-  .ion-spinner {
-    color: #ff7e5f !important; /* Match spinner color with theme */
-  }
-  
-  .ion-item {
-    background-color: #f9f9f9; /* Lighter background for items */
-    border-radius: 10px;
-    margin-bottom: 10px;
-    padding: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Add shadow to items */
-  }
-  
-  .ion-item:hover {
-    background-color: #ffd1a4; /* Hover effect on items */
-  }
-  
-  .ion-button {
-    font-weight: bold;
-  }
-  
-  .ion-label h2 {
-    color: #333;
-    font-size: 1.1rem;
-    margin-bottom: 5px;
-  }
-  
-  .ion-label p {
-    color: #666;
-    font-size: 0.9rem;
-  }
-  
+}
+
+/* BIA Description Box */
+.bia-description {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-left: 4px solid #3880ff;
+  margin-top: 8px;
+  border-radius: 6px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Dark Mode Support */
+body.dark-mode {
+  --ion-background-color: #1e1e1e;
+  --ion-text-color: #e0e0e0;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode ion-card {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode ion-textarea {
+  background-color: #333 !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .bia-description {
+  background-color: #2e2e2e;
+  border-left-color: #4a90e2;
+  color: #dcdcdc;
+}
