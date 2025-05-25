@@ -1,24 +1,21 @@
-/* Reset some Ion default styles for a cleaner look */
-.ion-page {
+.admin-dashboard .ion-page {
   background-color: #f9fafb !important;
   color: #1a202c !important;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Card styles */
-ion-card {
+.admin-dashboard ion-card {
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   background: white;
   transition: box-shadow 0.3s ease;
 }
 
-ion-card:hover {
+.admin-dashboard ion-card:hover {
   box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
-/* Card header and title */
-ion-card-header {
+.admin-dashboard ion-card-header {
   background-color: #2b6cb0;
   color: white;
   border-top-left-radius: 12px;
@@ -29,19 +26,17 @@ ion-card-header {
   text-transform: uppercase;
 }
 
-ion-card-title {
+.admin-dashboard ion-card-title {
   font-weight: 700;
   font-size: 1.25rem;
 }
 
-/* Card content padding */
-ion-card-content {
+.admin-dashboard ion-card-content {
   padding: 16px;
   color: #2d3748;
 }
 
-/* Buttons */
-ion-button {
+.admin-dashboard ion-button {
   --background: #3182ce;
   --background-hover: #2c5282;
   --color: #fff;
@@ -51,20 +46,18 @@ ion-button {
   transition: background-color 0.3s ease;
 }
 
-ion-button:hover {
+.admin-dashboard ion-button:hover {
   --background: #2c5282;
 }
 
-/* IonLabel styling */
-ion-label {
+.admin-dashboard ion-label {
   font-weight: 600;
   color: #4a5568;
   margin-bottom: 6px;
   display: block;
 }
 
-/* IonTextarea styling */
-ion-textarea {
+.admin-dashboard ion-textarea {
   border: 1px solid #cbd5e0;
   border-radius: 6px;
   padding: 8px;
@@ -73,13 +66,12 @@ ion-textarea {
   transition: border-color 0.3s ease;
 }
 
-ion-textarea:focus {
+.admin-dashboard ion-textarea:focus {
   border-color: #3182ce;
   outline: none;
 }
 
-/* IonSelect styling */
-ion-select {
+.admin-dashboard ion-select {
   --background: #edf2f7;
   border-radius: 6px;
   padding: 8px;
@@ -88,91 +80,82 @@ ion-select {
   --color: #2d3748;
 }
 
-/* Table styles for BIA reports */
-table {
+.admin-dashboard table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
   color: #2d3748;
 }
 
-thead tr {
+.admin-dashboard thead tr {
   background-color: #2b6cb0;
   color: white;
 }
 
-th, td {
+.admin-dashboard th,
+.admin-dashboard td {
   padding: 10px 12px;
   border: 1px solid #cbd5e0;
   text-align: left;
 }
 
-tbody tr:nth-child(even) {
+.admin-dashboard tbody tr:nth-child(even) {
   background-color: #f7fafc;
 }
 
-tbody tr:hover {
+.admin-dashboard tbody tr:hover {
   background-color: #bee3f8;
 }
 
-/* Responsive container for charts */
-.responsive-container {
+.admin-dashboard .responsive-container {
   width: 100% !important;
   height: 280px !important;
 }
 
-/* Toast styling override */
-ion-toast {
+.admin-dashboard ion-toast {
   --background: #2b6cb0;
   --color: white;
   font-weight: 600;
 }
 
-/* IonToolbar for page header */
-ion-toolbar {
+.admin-dashboard ion-toolbar {
   --background: #2b6cb0;
   color: white;
   font-weight: 700;
   font-size: 1.25rem;
 }
 
-/* Scrollable list styling */
-ion-list {
+.admin-dashboard ion-list {
   max-height: 70vh;
   overflow-y: auto;
   padding: 8px;
 }
 
-/* General spacing */
-.ion-margin-top {
+.admin-dashboard .ion-margin-top {
   margin-top: 1rem !important;
 }
 
-.ion-margin-bottom {
+.admin-dashboard .ion-margin-bottom {
   margin-bottom: 1rem !important;
 }
 
-/* For smaller buttons */
-ion-button[size="small"] {
+.admin-dashboard ion-button[size="small"] {
   font-size: 0.85rem;
   padding: 6px 12px;
   --background: #4a5568;
   --background-hover: #2d3748;
 }
 
-/* Strong emphasis */
-strong {
+.admin-dashboard strong {
   color: #2c5282;
 }
 
-/* Customize IonIcon colors */
-ion-icon {
+.admin-dashboard ion-icon {
   color: #3182ce;
   vertical-align: middle;
 }
 
-/* Table styles for BIA reports */
-table {
+.admin-dashboard table {
   width: 100%;
   border-collapse: collapse;
   font-size: 1rem;
@@ -183,44 +166,50 @@ table {
   overflow: hidden;
 }
 
-thead tr {
+.admin-dashboard thead tr {
   background-color: #2b6cb0;
   color: white;
   font-weight: 600;
 }
 
-th, td {
+.admin-dashboard th,
+.admin-dashboard td {
   padding: 12px 15px;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
 }
 
-tbody tr:nth-child(even) {
+.admin-dashboard tbody tr:nth-child(even) {
   background-color: #f7fafc;
 }
 
-tbody tr:hover {
+.admin-dashboard tbody tr:hover {
   background-color: #bee3f8;
   cursor: default;
 }
 
-tbody tr:last-child td {
+.admin-dashboard tbody tr:last-child td {
   border-bottom: none;
 }
 
 /* Responsive tweaks */
 @media (max-width: 768px) {
-  table, thead, tbody, th, td, tr {
+  .admin-dashboard table,
+  .admin-dashboard thead,
+  .admin-dashboard tbody,
+  .admin-dashboard th,
+  .admin-dashboard td,
+  .admin-dashboard tr {
     display: block;
   }
 
-  thead tr {
+  .admin-dashboard thead tr {
     position: absolute;
     top: -9999px;
     left: -9999px;
   }
 
-  tbody tr {
+  .admin-dashboard tbody tr {
     margin-bottom: 15px;
     background-color: #fff;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
@@ -228,7 +217,7 @@ tbody tr:last-child td {
     padding: 10px;
   }
 
-  tbody td {
+  .admin-dashboard tbody td {
     border: none;
     padding: 8px 10px;
     position: relative;
@@ -236,7 +225,7 @@ tbody tr:last-child td {
     white-space: pre-wrap;
   }
 
-  tbody td::before {
+  .admin-dashboard tbody td::before {
     position: absolute;
     top: 8px;
     left: 10px;
@@ -247,10 +236,9 @@ tbody tr:last-child td {
     color: #2b6cb0;
   }
 
-  /* Label each cell with the corresponding column name */
-  tbody td:nth-of-type(1)::before { content: "Report Name"; }
-  tbody td:nth-of-type(2)::before { content: "Date"; }
-  tbody td:nth-of-type(3)::before { content: "Risk Level"; }
-  tbody td:nth-of-type(4)::before { content: "Status"; }
-  tbody td:nth-of-type(5)::before { content: "Remarks"; }
+  .admin-dashboard tbody td:nth-of-type(1)::before { content: "Report Name"; }
+  .admin-dashboard tbody td:nth-of-type(2)::before { content: "Date"; }
+  .admin-dashboard tbody td:nth-of-type(3)::before { content: "Risk Level"; }
+  .admin-dashboard tbody td:nth-of-type(4)::before { content: "Status"; }
+  .admin-dashboard tbody td:nth-of-type(5)::before { content: "Remarks"; }
 }

@@ -1,11 +1,12 @@
 /* 📁 src/components/Welcome.css */
 
-body.dark-mode {
+body.dark {
   --ion-background-color: #121212;
   --ion-text-color: #ffffff;
   background-color: #121212;
   color: #ffffff;
 }
+
 
 h2 {
   font-size: 26px;

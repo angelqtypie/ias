@@ -74,9 +74,9 @@ const WelcomePage: React.FC = () => {
 
     // Apply dark mode CSS class if enabled
     if (savedDarkMode) {
-      document.body.classList.add('dark-mode');
+      document.body.classList.add('dark');
     } else {
-      document.body.classList.remove('dark-mode');
+      document.body.classList.remove('dark');
     }
   }, []);
 
@@ -102,32 +102,44 @@ const WelcomePage: React.FC = () => {
     router.push('/auth');
   };
 
-  const handleChangePassword = async () => {
-    if (!newPassword) {
-      presentToast({ message: 'Password cannot be empty', color: 'warning', duration: 2000 });
-      return;
-    }
+  const handleSaveProfile = async () => {
+  if (!fullName || !userEmail) {
+    presentToast({ message: 'Name and email cannot be empty.', color: 'warning', duration: 2000 });
+    return;
+  }
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData?.session) {
-      presentToast({ message: 'Session expired. Please log in again.', color: 'danger', duration: 3000 });
-      return;
-    }
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session) {
+    presentToast({ message: 'Session expired. Please log in again.', color: 'danger', duration: 3000 });
+    return;
+  }
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-
-    if (error) {
-      presentToast({ message: 'Failed to update password: ' + error.message, color: 'danger', duration: 3000 });
-    } else {
-      presentToast({ message: 'Password updated successfully', color: 'success', duration: 2000 });
-      setNewPassword('');
-      setShowPassword(false);
-      setShowProfileModal(false);
-      setTimeout(() => {
-        router.push('/auth');
-      }, 2100);
-    }
+  const updates: any = {
+    email: userEmail,
+    data: { full_name: fullName }
   };
+
+  if (newPassword) {
+    updates.password = newPassword;
+  }
+
+  const { error } = await supabase.auth.updateUser(updates);
+
+  if (error) {
+    presentToast({ message: `Update failed: ${error.message}`, color: 'danger', duration: 3000 });
+    return;
+  }
+
+  presentToast({ message: 'Profile updated successfully!', color: 'success', duration: 2000 });
+
+  setNewPassword('');
+  setShowPassword(false);
+  setShowProfileModal(false);
+
+  if (newPassword) {
+    setTimeout(() => router.push('/auth'), 2100); // Force re-login if password changed
+  }
+};
 
   const deleteIncident = async (id: number) => {
     const { error } = await supabase.from('incidents').delete().eq('id', id);
@@ -338,8 +350,8 @@ const WelcomePage: React.FC = () => {
                   placeholder="Select Type"
                   onIonChange={e => setFeedbackType(e.detail.value)}
                 >
-                  <IonSelectOption value="positive">Positive</IonSelectOption>
-                  <IonSelectOption value="negative">Negative</IonSelectOption>
+                  <IonSelectOption value="positive">Helpful</IonSelectOption>
+                  <IonSelectOption value="negative">Not Helpful</IonSelectOption>
                   <IonSelectOption value="neutral">Neutral</IonSelectOption>
                 </IonSelect>
               </IonItem>
@@ -358,40 +370,52 @@ const WelcomePage: React.FC = () => {
           </IonModal>
 
           {/* Profile Modal */}
-          <IonModal isOpen={showProfileModal} onDidDismiss={() => setShowProfileModal(false)}>
-            <IonHeader>
-              <IonToolbar>
-                <IonTitle>My Profile</IonTitle>
-                <IonButtons slot="end">
-                  <IonButton onClick={() => setShowProfileModal(false)}>Close</IonButton>
-                </IonButtons>
-              </IonToolbar>
-            </IonHeader>
-            <IonContent className="ion-padding">
-              <IonItem>
-                <IonLabel position="stacked">Full Name</IonLabel>
-                <IonInput value={fullName} readonly />
-              </IonItem>
-              <IonItem>
-                <IonLabel position="stacked">Email</IonLabel>
-                <IonInput value={userEmail} readonly />
-              </IonItem>
-              <IonItem>
-                <IonLabel position="stacked">New Password</IonLabel>
-                <IonInput
-                  type={showPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onIonChange={e => setNewPassword(e.detail.value!)}
-                />
-                <IonButton slot="end" fill="clear" onClick={() => setShowPassword(!showPassword)}>
-                  <IonIcon icon={showPassword ? eyeOffOutline : eyeOutline} />
-                </IonButton>
-              </IonItem>
-              <IonButton expand="block" className="ion-margin-top" onClick={handleChangePassword}>
-                Change Password
-              </IonButton>
-            </IonContent>
-          </IonModal>
+<IonModal isOpen={showProfileModal} onDidDismiss={() => setShowProfileModal(false)}>
+  <IonHeader>
+    <IonToolbar>
+      <IonTitle>My Profile</IonTitle>
+      <IonButtons slot="end">
+        <IonButton onClick={() => setShowProfileModal(false)}>Close</IonButton>
+      </IonButtons>
+    </IonToolbar>
+  </IonHeader>
+  <IonContent className="ion-padding">
+    <IonItem>
+      <IonLabel position="stacked">Full Name</IonLabel>
+      <IonInput value={fullName} onIonChange={e => setFullName(e.detail.value!)} />
+    </IonItem>
+    <IonItem>
+      <IonLabel position="stacked">Email</IonLabel>
+      <IonInput value={userEmail} onIonChange={e => setUserEmail(e.detail.value!)} />
+    </IonItem>
+    <IonItem>
+      <IonLabel position="stacked">New Password</IonLabel>
+      <IonInput
+        type={showPassword ? 'text' : 'password'}
+        value={newPassword}
+        onIonChange={e => setNewPassword(e.detail.value!)}
+      />
+      <IonButton slot="end" fill="clear" onClick={() => setShowPassword(!showPassword)}>
+        <IonIcon icon={showPassword ? eyeOffOutline : eyeOutline} />
+      </IonButton>
+    </IonItem>
+
+    <IonGrid className="ion-margin-top">
+      <IonRow>
+        <IonCol>
+          <IonButton expand="block" color="medium" onClick={() => setShowProfileModal(false)}>
+            Cancel
+          </IonButton>
+        </IonCol>
+        <IonCol>
+          <IonButton expand="block" color="primary" onClick={handleSaveProfile}>
+            Save Changes
+          </IonButton>
+        </IonCol>
+      </IonRow>
+    </IonGrid>
+  </IonContent>
+</IonModal>
 
           {/* Settings Modal */}
           <IonModal isOpen={showSettingsModal} onDidDismiss={() => setShowSettingsModal(false)}>

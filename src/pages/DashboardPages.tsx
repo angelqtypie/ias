@@ -8,7 +8,8 @@ import { supabase } from '../utils/supabaseClient';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { logOut } from 'ionicons/icons';
+import { useHistory } from 'react-router-dom';
+import { logOut, logOutOutline } from 'ionicons/icons';
 import '../components/DashboardPage.css';
 
 const AdminDashboard: React.FC = () => {
@@ -31,6 +32,9 @@ const AdminDashboard: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string>('');
   const [operationalRecs, setOperationalRecs] = useState<string[]>([]);
   const [managerialRecs, setManagerialRecs] = useState<string[]>([]);
+
+
+  const history = useHistory();
 
 
   const currentUserRole = 'admin'; // Simulate user role
@@ -179,23 +183,40 @@ const AdminDashboard: React.FC = () => {
     setLoading(false);
   };
 
+const fetchFeedbacks = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('id, title, feedback_type, feedback_text, reported_by, admin_solution, created_at, status')
+      .not('feedback_text', 'is', null)
+      .order('created_at', { ascending: false });
 
-  const fetchFeedbacks = async () => {
-  setLoading(true);
-  const { data, error } = await supabase
-    .from('incidents')
-    .select('id, title, status, created_at, user_feedback')
-    .order('created_at', { ascending: false });
+    if (error) {
+      setToastMsg('Failed to load feedbacks: ' + error.message);
+      console.error('Fetch feedback error:', error);
+    } else {
+      setFeedbacks(data || []);
+    }
+    setLoading(false);
+  };
 
-  if (error) {
-    setToastMsg('Failed to load feedbacks: ' + error.message);
-    console.error('Fetch feedback error:', error);
-  } else {
+  const handleMarkAsResolved = async (id: number) => {
+    const confirmAction = window.confirm('Are you sure you want to mark this feedback as resolved?');
+    if (!confirmAction) return;
 
-    setFeedbacks(data || []);
-  }
-  setLoading(false);
-};
+    const { error } = await supabase
+      .from('incidents')
+      .update({ status: 'Resolved' })
+      .eq('id', id);
+
+    if (error) {
+      setToastMsg('Error marking as resolved: ' + error.message);
+    } else {
+      setToastMsg('Marked as Resolved');
+      fetchFeedbacks();
+    }
+  };
+
 
   useEffect(() => {
     fetchIncidents();
@@ -347,8 +368,14 @@ const submitBiaReport = async () => {
   );
 
   const renderIncidents = () => (
+     <div style={{ padding: 16 }}>
+      <>
+    <BackToDashboardButton />
+    {incidents.length === 0 ? (
+      <p style={{ padding: 16 }}>No incidents available.</p>
+    ) : (
     <IonList>
-      <BackToDashboardButton />
+
       {incidents.map((incident) => {
         const typeKey = (incident.title || '').toLowerCase().trim();
         const solutions = solutionsByType[typeKey] || [];
@@ -414,9 +441,13 @@ const submitBiaReport = async () => {
               </IonButton>
             </IonCardContent>
           </IonCard>
+      
         );
       })}
     </IonList>
+    )}
+    </>
+      </div>
   );
 
 const renderBIAForm = () => (
@@ -497,110 +528,95 @@ const renderBIAForm = () => (
 );
 
  const renderBIAReports = () => (
-    <div style={{ padding: '16px' }}>
-      <BackToDashboardButton />
-      {biaReports.length === 0 ? (
-        <p>No BIA reports submitted.</p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f0f0f0' }}>
-              <th style={{ padding: '8px', border: '1px solid #ccc' }}>Incident Title</th>
-              <th style={{ padding: '8px', border: '1px solid #ccc' }}>Risk Level</th>
-              <th style={{ padding: '8px', border: '1px solid #ccc' }}>Operational</th>
-              <th style={{ padding: '8px', border: '1px solid #ccc' }}>Managerial</th>
-              <th style={{ padding: '8px', border: '1px solid #ccc' }}>Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {biaReports.map((bia) => (
-              <tr key={bia.id}>
-                <td style={{ padding: '8px', border: '1px solid #ccc' }}>{bia.incidents?.title || 'Untitled Incident'}</td>
-                <td style={{ padding: '8px', border: '1px solid #ccc' }}>{bia.risk_level}</td>
-                <td style={{ padding: '8px', border: '1px solid #ccc' }}>{bia.operational}</td>
-                <td style={{ padding: '8px', border: '1px solid #ccc' }}>{bia.managerial}</td>
-                <td style={{ padding: '8px', border: '1px solid #ccc' }}>{new Date(bia.created_at).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
+  <div className="ion-padding">
+    <BackToDashboardButton />
+    {biaReports.length === 0 ? (
+      <p>No BIA reports submitted.</p>
+    ) : (
+      <IonCard>
+        <IonCardHeader>
+          <IonCardTitle>BIA Reports</IonCardTitle>
+        </IonCardHeader>
+        <IonCardContent>
+          {biaReports.map((bia) => (
+            <IonCard key={bia.id} className="ion-margin-bottom">
+              <IonCardHeader>
+                <IonCardTitle>{bia.incidents?.title || 'Untitled Incident'}</IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <p><strong>Risk Level:</strong> {bia.risk_level}</p>
+                <p><strong>Operational:</strong> {bia.operational}</p>
+                <p><strong>Managerial:</strong> {bia.managerial}</p>
+                <p><strong>Created At:</strong> {new Date(bia.created_at).toLocaleString()}</p>
+              </IonCardContent>
+            </IonCard>
+          ))}
+        </IonCardContent>
+      </IonCard>
+    )}
+  </div>
+);
+
 
 const renderFeedbacks = () => {
-  if (feedbacks.length === 0) {
-    return (
-      <div style={{ padding: 16 }}>
-        <BackToDashboardButton />
-        <p>No user feedbacks available yet.</p>
-      </div>
-    );
-  }
-
   return (
-    <IonList>
+    <>
       <BackToDashboardButton />
-      {feedbacks.map(incident => (
-        <IonCard key={incident.id} className="ion-margin-bottom">
+
+      {feedbacks.length === 0 ? (
+        <p style={{ padding: 16 }}>No feedback available.</p>
+      ) : (
+    <IonList>
+      {feedbacks.map((fb) => (
+        <IonCard key={fb.id} className="ion-margin-bottom">
           <IonCardHeader>
-            <IonCardTitle>{incident.title}</IonCardTitle>
+            <IonCardTitle>{fb.title}</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <IonItem>
-              <IonLabel><strong>Reported:</strong> {new Date(incident.created_at).toLocaleDateString()}</IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonLabel><strong>Status:</strong> {incident.status || 'N/A'}</IonLabel>
-            </IonItem>
-            <IonItem lines="none" style={{ marginTop: 8 }}>
-              <IonLabel><strong>User Feedback:</strong></IonLabel>
-            </IonItem>
-            <IonTextarea
-              value={incident.user_feedback || ''}
-              readonly
-              autoGrow
-              rows={3}
-            />
+            <p><strong>Status:</strong> {fb.status}</p>
+                        <p><strong>Reported By:</strong> {usersMap[fb.reported_by] || 'Unknown'}</p>
+            <p><strong>Reported At:</strong> {new Date(fb.created_at).toLocaleString()}</p>
+            <p><strong>Helpfulness:</strong> {fb.feedback_type || 'No feedback type provided.'}</p>
+            <p><strong>Feedback:</strong> {fb.feedback_text || 'No feedback provided.'}</p>
           </IonCardContent>
         </IonCard>
       ))}
     </IonList>
+      )}
+    </>
   );
 };
 
+return (
+  <IonPage className="admin-dashboard">
 
-  return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Admin Dashboard</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={logout}>
-              <IonIcon icon={logOut} />
-              Log out
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen>
-        {loading && <IonLoading isOpen={loading} message="Loading..." />}
-        <IonToast
-          isOpen={!!toastMsg}
-          onDidDismiss={() => setToastMsg('')}
-          message={toastMsg}
-          duration={2500}
-          color="danger"
-        />
+    <IonHeader>
+      <IonToolbar>
+        <IonTitle>CipherOps Admin Dashboard</IonTitle>
+        <IonButtons slot="end">
+          <IonButton onClick={logout}>LOGOUT
+            <IonIcon icon={logOutOutline} slot="start" color='black'/>
+          </IonButton>
+        </IonButtons>
+      </IonToolbar>
+    </IonHeader>
+    <IonContent fullscreen>
+      {loading && <IonLoading isOpen={loading} message={'Please wait...'} />}
+      <IonToast
+        isOpen={toastMsg !== ''}
+        message={toastMsg}
+        duration={3000}
+        onDidDismiss={() => setToastMsg('')}
+      />
+      {activeView === 'dashboard' && renderDashboard()}
+      {activeView === 'incidents' && renderIncidents()}
+      {activeView === 'bia' && renderBIAForm()}
+      {activeView === 'biaReports' && renderBIAReports()}
+      {activeView === 'feedbacks' && renderFeedbacks()}
+    </IonContent>
+  </IonPage>
+);
 
-        {activeView === 'dashboard' && renderDashboard()}
-        {activeView === 'incidents' && renderIncidents()}
-        {activeView === 'bia' && renderBIAForm()}
-        {activeView === 'biaReports' && renderBIAReports()}
-        {activeView === 'feedbacks' && renderFeedbacks()}
-      </IonContent>
-    </IonPage>
-  );
 };
 
 export default AdminDashboard;
