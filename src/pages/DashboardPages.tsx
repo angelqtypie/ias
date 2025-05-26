@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonButton,
   IonTextarea, IonSelect, IonSelectOption, IonLoading, IonToast, IonCard, IonCardHeader,
-  IonCardTitle, IonCardContent, IonLabel, IonItem, IonIcon, IonButtons
+  IonCardTitle, IonCardContent, IonLabel, IonItem, IonIcon, IonButtons 
 } from '@ionic/react';
 import { supabase } from '../utils/supabaseClient';
 import {
@@ -18,7 +18,7 @@ const AdminDashboard: React.FC = () => {
   const [usersMap, setUsersMap] = useState<{ [id: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
-  const [noteDrafts, setNoteDrafts] = useState<{ [id: number]: string }>({});
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [biaTitle, setBiaTitle] = useState('');
   const [biaDescription, setBiaDescription] = useState('');
   const [biaReports, setBiaReports] = useState<any[]>([]);
@@ -33,6 +33,13 @@ const AdminDashboard: React.FC = () => {
   const [operationalRecs, setOperationalRecs] = useState<string[]>([]);
   const [managerialRecs, setManagerialRecs] = useState<string[]>([]);
 
+  const [selectedSolutions, setSelectedSolutions] = useState<{ [key: string]: string }>({});
+
+const [solutionDrafts, setSolutionDrafts] = useState<Record<string, string>>({});
+const [riskDrafts, setRiskDrafts] = useState<Record<string, string>>({});
+const [auditLogs, setAuditLogs] = useState<{ [incidentId: string]: AuditLog[] }>({});
+const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+
 
   const history = useHistory();
 
@@ -45,6 +52,16 @@ const AdminDashboard: React.FC = () => {
     if (text.includes('phishing') || text.includes('malware')) return 'Medium';
     return 'Low';
   }; 
+  
+interface AuditLog {
+  id: string;
+  changed_at: string;
+  changed_by: string;
+  action: string;
+  details: string;
+}
+
+
 
   const recommendationsByType: {
     [type: string]: {
@@ -111,6 +128,8 @@ const AdminDashboard: React.FC = () => {
         "Conduct risk assessment for lost devices."
       ]
     }
+
+    
   };
  
   const solutionsByType: { [key: string]: string[] } = {
@@ -139,7 +158,22 @@ const AdminDashboard: React.FC = () => {
     "Change all passwords linked to the device.",
     "Monitor accounts for any unauthorized activity."
   ]
-}
+}  
+
+
+const fetchAuditLogs = async (incidentId: string) => {
+  const { data, error } = await supabase
+    .from('incident_audit_logs')
+    .select('*')
+    .eq('incident_id', incidentId)
+    .order('changed_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch audit logs:', error);
+    return [];
+  }
+  return data;
+};
 
 
   const fetchIncidents = async () => {
@@ -184,38 +218,71 @@ const AdminDashboard: React.FC = () => {
   };
 
 const fetchFeedbacks = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('incidents')
-      .select('id, title, feedback_type, feedback_text, reported_by, admin_solution, created_at, status')
-      .not('feedback_text', 'is', null)
-      .order('created_at', { ascending: false });
+  setLoading(true);
 
-    if (error) {
-      setToastMsg('Failed to load feedbacks: ' + error.message);
-      console.error('Fetch feedback error:', error);
-    } else {
-      setFeedbacks(data || []);
-    }
-    setLoading(false);
-  };
+  const { data, error } = await supabase
+    .from('feedbacks')
+    .select(`
+      *,
+      incidents(*)
+    `)
+    .order('created_at', { ascending: false });
 
-  const handleMarkAsResolved = async (id: number) => {
-    const confirmAction = window.confirm('Are you sure you want to mark this feedback as resolved?');
-    if (!confirmAction) return;
+  if (error) {
+    console.error('Fetch feedback error:', error);
+    setToastMsg('Failed to load feedbacks: ' + error.message);
+  } else {
+    setFeedbacks(data || []);
+  }
 
-    const { error } = await supabase
-      .from('incidents')
-      .update({ status: 'Resolved' })
-      .eq('id', id);
+  setLoading(false);
+};
 
-    if (error) {
-      setToastMsg('Error marking as resolved: ' + error.message);
-    } else {
-      setToastMsg('Marked as Resolved');
-      fetchFeedbacks();
-    }
-  };
+
+const handleMarkAsResolved = async (feedbackId: string): Promise<void> => {
+  const { data, error } = await supabase
+    .from('feedbacks')
+    .update({ status: 'Resolved' })
+    .eq('id', feedbackId);
+
+  if (error) {
+    console.error('Error marking as resolved:', error);
+    return;
+  }
+
+  // Optimistically update UI
+  setFeedbacks(prev =>
+    prev.map(fb =>
+      fb.id === feedbackId ? { ...fb, status: 'Resolved' } : fb
+    )
+  );
+};
+
+
+
+const handleSendAdminSolution = async (feedbackId: string) => {
+  const solution = selectedSolutions[feedbackId];
+  if (!solution) return;
+
+  const { error } = await supabase
+    .from('feedbacks')
+    .update({ admin_solution: solution })
+    .eq('id', feedbackId);
+
+  if (error) {
+    console.error('Error updating admin solution:', error);
+    return;
+  }
+
+  // Update local state
+  setFeedbacks(prev =>
+    prev.map(fb =>
+      fb.id === feedbackId ? { ...fb, admin_solution: solution } : fb
+    )
+  );
+};
+
+
 
 
   useEffect(() => {
@@ -225,28 +292,96 @@ const fetchFeedbacks = async () => {
     fetchFeedbacks();
   }, []);
 
+const updateSolution = async (incidentId: string, solution: string) => {
+  if (!currentUser) {
+    console.error('No user logged in!');
+    return;
+  }
 
-  const updateSolution = async (id: number, solution: string) => {
-    setLoading(true);
-    const { error } = await supabase.from('incidents').update({ admin_solution: solution, status: 'In Progress' }).eq('id', id);
-    if (error) setToastMsg('Failed to update solution: ' + error.message);
-    else {
-      setToastMsg('Solution updated');
-      fetchIncidents();
-    }
-    setLoading(false);
-  };
+  try {
+    // 1. Optionally get old incident data
+    const { data: oldIncident, error: oldIncidentError } = await supabase
+      .from('incidents')
+      .select('admin_solution')
+      .eq('id', incidentId)
+      .single();
 
-  const updateStatus = async (id: number, status: string) => {
-    setLoading(true);
-    const { error } = await supabase.from('incidents').update({ status }).eq('id', id);
-    if (error) setToastMsg('Failed to update status: ' + error.message);
-    else {
-      setToastMsg('Status updated');
-      fetchIncidents();
+    if (oldIncidentError) {
+      console.error('Failed to fetch old incident data:', oldIncidentError);
+      return;
     }
-    setLoading(false);
-  };
+
+    // 2. Update incident with new solution and timestamp
+    const { error: updateError } = await supabase
+      .from('incidents')
+      .update({ admin_solution: solution, updated_at: new Date().toISOString() })
+      .eq('id', incidentId);
+
+    if (updateError) {
+      console.error('Failed to update incident solution:', updateError);
+      return;
+    }
+
+    // 3. Insert audit log entry
+    const { error: logError } = await supabase
+      .from('incident_audit_logs')
+      .insert({
+        incident_id: incidentId,
+        changed_by: currentUser.id,
+        action: 'solution_submitted',
+        old_status: null,
+        new_status: null,
+        details: solution,
+        changed_at: new Date().toISOString(),
+      });
+
+    if (logError) {
+      console.error('Failed to insert audit log:', logError);
+      return;
+    }
+
+    // Optionally update UI state here
+    setToastMsg('Solution updated successfully.');
+
+  } catch (error) {
+    console.error('Unexpected error in updateSolution:', error);
+  }
+};
+
+
+const updateStatus = async (id: number, newStatus: string) => {
+  const incident = incidents.find(i => i.id === id);
+  const oldStatus = incident?.status || '';
+
+  setLoading(true);
+
+  const { error } = await supabase.from('incidents').update({ status: newStatus }).eq('id', id);
+
+  if (error) {
+    setToastMsg('Failed to update status: ' + error.message);
+  } else {
+    // INSERT AUDIT LOG
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    await supabase.from('incident_audit_logs').insert([
+      {
+        incident_id: incident.id,
+        changed_by: user?.id,
+        old_status: oldStatus,
+        new_status: newStatus,
+        changed_at: new Date().toISOString(),
+      },
+    ]);
+
+    setToastMsg('Status updated');
+    fetchIncidents();
+  }
+
+  setLoading(false);
+};
+ 
 
   const updateRiskLevel = async (id: number, risk: string) => {
     setLoading(true);
@@ -256,17 +391,29 @@ const fetchFeedbacks = async () => {
   };
 
 
-  const saveNote = async (id: number) => {
-    const note = noteDrafts[id] || '';
-    setLoading(true);
-    const { error } = await supabase.from('incidents').update({ admin_note: note }).eq('id', id);
-    if (error) setToastMsg('Failed to save note: ' + error.message);
-    else {
-      setToastMsg('Note saved');
-      fetchIncidents();
-    }
-    setLoading(false);
-  };
+ const saveNote = async (incidentId: string) => {
+  const admin_solution = solutionDrafts[incidentId] ?? null;
+  const risk_level = riskDrafts[incidentId] ?? null;
+  const admin_notes = noteDrafts[incidentId] ?? '';
+
+  const { error } = await supabase
+    .from('incidents')
+    .update({
+      admin_solution,
+      risk_level,
+      admin_notes,
+    })
+    .eq('id', incidentId);
+
+  if (error) {
+    console.error(`Failed to update incident ${incidentId}:`, error.message);
+    // Optional: show IonToast for error
+  } else {
+    console.log(`Incident ${incidentId} updated successfully.`);
+    // Optional: show IonToast for success
+  }
+};
+
 
 const submitBiaReport = async () => {
     if (!selectedIncidentId || !selectedRiskLevel || !selectedOperational || !selectedManagerial) {
@@ -331,7 +478,8 @@ const submitBiaReport = async () => {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/auth';
+    history.push('/auth');
+
   };
 
   const BackToDashboardButton = () => (
@@ -367,88 +515,138 @@ const submitBiaReport = async () => {
     </div>
   );
 
-  const renderIncidents = () => (
-     <div style={{ padding: 16 }}>
-      <>
-    <BackToDashboardButton />
-    {incidents.length === 0 ? (
-      <p style={{ padding: 16 }}>No incidents available.</p>
-    ) : (
-    <IonList>
+ const renderIncidents = () => (
+  <div style={{ padding: 16 }}>
+    <>
+      <BackToDashboardButton />
 
-      {incidents.map((incident) => {
-        const typeKey = (incident.title || '').toLowerCase().trim();
-        const solutions = solutionsByType[typeKey] || [];
-        const reporter = usersMap[incident.reported_by] || 'Unknown';
-        return (
-          <IonCard key={incident.id} className="ion-margin-bottom">
-            <IonCardHeader><IonCardTitle>{incident.title}</IonCardTitle></IonCardHeader>
-            <IonCardContent>
-              <IonItem>
-                <IonLabel>Status:</IonLabel>
-                <IonSelect
-                  value={incident.status}
-                  placeholder="Select Status"
-                  onIonChange={e => updateStatus(incident.id, e.detail.value!)}
-                  interface="alert"
-                >
-                  <IonSelectOption value="Open">Open</IonSelectOption>
-                  <IonSelectOption value="In Progress">Investigating</IonSelectOption>
-                  <IonSelectOption value="Resolved">Resolved</IonSelectOption>
-                </IonSelect>
-              </IonItem>
-              <IonItem><IonLabel><strong>Reported by:</strong> {reporter}</IonLabel></IonItem>
-              <IonItem><IonLabel><strong>Reported at:</strong> {new Date(incident.created_at).toLocaleString()}</IonLabel></IonItem>
-              <IonItem><IonLabel><strong>Login IP:</strong> {incident.login_ip}</IonLabel></IonItem>
-              <IonItem><IonLabel><strong>Description:</strong> {incident.description}</IonLabel></IonItem>
+      {incidents.length === 0 ? (
+        <p style={{ padding: 16 }}>No incidents available.</p>
+      ) : (
+        <IonList>
+          {incidents.map((incident) => {
+            const typeKey = (incident.title || '').toLowerCase().trim();
+            const solutions = solutionsByType[typeKey] || [];
+            const reporter = usersMap[incident.reported_by] || 'Unknown';
 
-              {currentUserRole === 'admin' && (
-                <>
-                  <IonLabel className="ion-margin-top"><strong>Admin Solution</strong></IonLabel>
-                  <IonSelect
-                    placeholder="Select a solution"
-                    value={incident.admin_solution || ''}
-                    onIonChange={e => updateSolution(incident.id, e.detail.value!)}
-                    interface="alert"
-                  >
-                    {solutions.map((sol, idx) => (
-                      <IonSelectOption key={idx} value={sol}>{sol}</IonSelectOption>
-                    ))}
-                  </IonSelect>
+            return (
+              <IonCard key={incident.id} className="ion-margin-bottom">
+                <IonCardHeader>
+                  <IonCardTitle>{incident.title}</IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <IonItem>
+                    <IonLabel>Status:</IonLabel>
+                    <IonSelect
+                      value={incident.status}
+                      placeholder="Select Status"
+                      onIonChange={e => updateStatus(incident.id, e.detail.value!)}
+                      interface="alert"
+                    >
+                        <IonLabel className="ion-margin-top"><strong>Audit Log</strong></IonLabel>
+  <IonList>
+{auditLogs[incident.id]?.map((log: AuditLog) => (
+  <IonItem key={log.id}>
+    <IonLabel>
+      <p><em>{new Date(log.changed_at).toLocaleString()}</em> by {log.changed_by}</p>
+      <p><strong>{log.action}</strong>: {log.details}</p>
+    </IonLabel>
+  </IonItem>
+))}
+  </IonList>
+                      <IonSelectOption value="Open">Open</IonSelectOption>
+                      <IonSelectOption value="In Progress">Investigating</IonSelectOption>
+                      <IonSelectOption value="Resolved">Resolved</IonSelectOption>
+                    </IonSelect>
+                  </IonItem>
 
-                  <IonLabel className="ion-margin-top"><strong>Risk Level</strong></IonLabel>
-                  <IonSelect
-                    placeholder="Select Risk"
-                    value={incident.risk_level || ''}
-                    onIonChange={e => updateRiskLevel(incident.id, e.detail.value!)}
-                  >
-                    <IonSelectOption value="Low">Low</IonSelectOption>
-                    <IonSelectOption value="Medium">Medium</IonSelectOption>
-                    <IonSelectOption value="High">High</IonSelectOption>
-                  </IonSelect>
-                </>
-              )}
+                  <IonItem>
+                    <IonLabel>
+                      <strong>Reported by:</strong> {reporter}
+                    </IonLabel>
+                  </IonItem>
 
-              <IonLabel className="ion-margin-top"><strong>Admin Notes</strong></IonLabel>
-              <IonTextarea
-                placeholder="Enter notes"
-                value={noteDrafts[incident.id] || ''}
-                onIonChange={e => setNoteDrafts(prev => ({ ...prev, [incident.id]: e.detail.value! }))}
-                rows={3}
-              />
-              <IonButton expand="block" onClick={() => saveNote(incident.id)} className="ion-margin-top">
-                Save Note
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
-      
-        );
-      })}
-    </IonList>
-    )}
+                  <IonItem>
+                    <IonLabel>
+                      <strong>Reported at:</strong> {new Date(incident.created_at).toLocaleString()}
+                    </IonLabel>
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel>
+                      <strong>Description:</strong> {incident.description}
+                    </IonLabel>
+                  </IonItem>
+
+                  {currentUserRole === 'admin' && (
+                    <>
+                      <IonLabel className="ion-margin-top">
+                        <strong>Admin Solution</strong>
+                      </IonLabel>
+                      <IonSelect
+                        placeholder="Select a solution"
+                        value={solutionDrafts[incident.id] ?? incident.admin_solution ?? ''}
+                        onIonChange={e =>
+                          setSolutionDrafts(prev => ({
+                            ...prev,
+                            [incident.id]: e.detail.value!,
+                          }))
+                        }
+                        interface="alert"
+                      >
+                        {solutions.map((sol, idx) => (
+                          <IonSelectOption key={idx} value={sol}>
+                            {sol}
+                          </IonSelectOption>
+                        ))}
+                      </IonSelect>
+
+                      <IonLabel className="ion-margin-top">
+                        <strong>Risk Level</strong>
+                      </IonLabel>
+                      <IonSelect
+                        placeholder="Select Risk"
+                        value={riskDrafts[incident.id] ?? incident.risk_level ?? ''}
+                        onIonChange={e =>
+                          setRiskDrafts(prev => ({
+                            ...prev,
+                            [incident.id]: e.detail.value!,
+                          }))
+                        }
+                      >
+                        <IonSelectOption value="Low">Low</IonSelectOption>
+                        <IonSelectOption value="Medium">Medium</IonSelectOption>
+                        <IonSelectOption value="High">High</IonSelectOption>
+                      </IonSelect>
+                    </>
+                  )}
+
+                  <IonLabel className="ion-margin-top">
+                    <strong>Admin Notes</strong>
+                  </IonLabel>
+                  <IonTextarea
+                    placeholder="Enter notes"
+                    value={noteDrafts[incident.id] ?? ''}
+                    onIonChange={e =>
+                      setNoteDrafts(prev => ({
+                        ...prev,
+                        [incident.id]: e.detail.value!,
+                      }))
+                    }
+                    rows={3}
+                  />
+                  <IonButton expand="block" onClick={() => saveNote(incident.id)} className="ion-margin-top">
+  Save
+</IonButton>
+                </IonCardContent>
+              </IonCard>
+            );
+          })}
+        </IonList>
+      )}
     </>
-      </div>
-  );
+  </div>
+);
 
 const renderBIAForm = () => (
   <div style={{ padding: 16 }}>
@@ -557,35 +755,84 @@ const renderBIAForm = () => (
   </div>
 );
 
+const renderFeedbacks = () => (
+  <div style={{ padding: 16 }}>
+    <BackToDashboardButton />
+    {feedbacks.length === 0 ? (
+      <p>No feedbacks available.</p>
+    ) : (
+      <IonList>
+        {feedbacks.map(feedback => {
+          const incidentType = feedback.incidents?.type?.toLowerCase().trim();
 
-const renderFeedbacks = () => {
-  return (
-    <>
-      <BackToDashboardButton />
+          return (
+            <IonCard key={feedback.id} className="ion-margin-bottom">
+              <IonCardHeader>
+                <IonCardTitle>{feedback.incidents?.title || 'No Title'}</IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <p><strong>Feedback Type:</strong> {feedback.feedback_type}</p>
+                <p><strong>Feedback:</strong> {feedback.feedback_text}</p>
+                <p><strong>Reported by:</strong> {usersMap[feedback.incidents?.reported_by] || feedback.incidents?.reported_by || 'Unknown'}</p>
+                <p><strong>Status:</strong> {feedback.status || 'Pending'}</p>
 
-      {feedbacks.length === 0 ? (
-        <p style={{ padding: 16 }}>No feedback available.</p>
-      ) : (
-    <IonList>
-      {feedbacks.map((fb) => (
-        <IonCard key={fb.id} className="ion-margin-bottom">
-          <IonCardHeader>
-            <IonCardTitle>{fb.title}</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <p><strong>Status:</strong> {fb.status}</p>
-                        <p><strong>Reported By:</strong> {usersMap[fb.reported_by] || 'Unknown'}</p>
-            <p><strong>Reported At:</strong> {new Date(fb.created_at).toLocaleString()}</p>
-            <p><strong>Helpfulness:</strong> {fb.feedback_type || 'No feedback type provided.'}</p>
-            <p><strong>Feedback:</strong> {fb.feedback_text || 'No feedback provided.'}</p>
-          </IonCardContent>
-        </IonCard>
-      ))}
-    </IonList>
-      )}
-    </>
-  );
-};
+                {feedback.admin_solution && (
+                  <p><strong>Admin Solution:</strong> {feedback.admin_solution}</p>
+                )}
+
+                {feedback.status !== 'Resolved' && (
+                  <IonButton
+                    color="success"
+                    onClick={() => handleMarkAsResolved(feedback.id)}
+                  >
+                    Mark as Resolved
+                  </IonButton>
+                )}
+
+                {!feedback.admin_solution && incidentType && recommendationsByType[incidentType] && (
+                  <>
+                    <IonLabel>Select Admin Solution:</IonLabel>
+                    <IonSelect
+                      value={selectedSolutions[feedback.id] || ''}
+                      placeholder="Choose a solution"
+                      onIonChange={(e) =>
+                        setSelectedSolutions(prev => ({
+                          ...prev,
+                          [feedback.id]: e.detail.value
+                        }))
+                      }
+                    >
+                      {Object.entries(recommendationsByType[incidentType]).flatMap(
+                        ([category, options]) => [
+                          <IonSelectOption key={`${category}-label`} disabled>
+                            -- {category.toUpperCase()} RECOMMENDATIONS --
+                          </IonSelectOption>,
+                          ...options.map((rec: string, idx: number) => (
+                            <IonSelectOption key={`${category}-${idx}`} value={rec}>
+                              {rec}
+                            </IonSelectOption>
+                          )),
+                        ]
+                      )}
+                    </IonSelect>
+                    <IonButton
+                      className="ion-margin-top"
+                      disabled={!selectedSolutions[feedback.id]}
+                      onClick={() => handleSendAdminSolution(feedback.id)}
+                    >
+                      Send Reply
+                    </IonButton>
+                  </>
+                )}
+              </IonCardContent>
+            </IonCard>
+          );
+        })}
+      </IonList>
+    )}
+  </div>
+);
+
 
 return (
   <IonPage className="admin-dashboard">
@@ -601,13 +848,13 @@ return (
       </IonToolbar>
     </IonHeader>
     <IonContent fullscreen>
-      {loading && <IonLoading isOpen={loading} message={'Please wait...'} />}
-      <IonToast
-        isOpen={toastMsg !== ''}
-        message={toastMsg}
-        duration={3000}
-        onDidDismiss={() => setToastMsg('')}
-      />
+<IonLoading isOpen={loading} message={'Please wait...'} />
+<IonToast
+  isOpen={toastMsg !== ''}
+  message={toastMsg}
+  duration={3000}
+  onDidDismiss={() => setToastMsg('')}
+/>
       {activeView === 'dashboard' && renderDashboard()}
       {activeView === 'incidents' && renderIncidents()}
       {activeView === 'bia' && renderBIAForm()}
