@@ -87,7 +87,7 @@ const AuthPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="dark">
+        <IonToolbar color="light">
           <div style={{ textAlign: 'center', padding: '10px 0' }}>
             <IonTitle
               style={{

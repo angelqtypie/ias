@@ -349,7 +349,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
 
 <IonModal isOpen={showIncidentModal} onDidDismiss={() => { setShowIncidentModal(false); setSelectedIncident(null); }}>
   <IonHeader>
-    <IonToolbar className='settings'>
+    <IonToolbar >
       <IonTitle>My Incident Reports</IonTitle>
       <IonButtons slot="end">
         <IonButton onClick={() => setShowIncidentModal(false)}>Close</IonButton>
@@ -368,7 +368,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
           onClick={() => setSelectedIncident(incident)}
         >
           <IonLabel>
-            <h2 className='setting'>{incident.title}</h2>
+            <h2 >{incident.title}</h2>
             <p>Status: <span style={{ color: statusColor(incident.status) }}>{incident.status}</span></p>
             <p>{formatLocalDateTime(incident.created_at)}</p>
           </IonLabel>
@@ -380,7 +380,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
       <>
         <IonItem lines="none" className="ion-padding-top">
           <IonLabel>
-            <h1 className='setting'>{selectedIncident.title}</h1>
+            <h1 >{selectedIncident.title}</h1>
             <p><strong>Report Description:</strong> <span style={{ color: statusColor(selectedIncident.description) }}>{selectedIncident.description}</span></p>
             <p><strong>Status:</strong> <span style={{ color: statusColor(selectedIncident.status) }}>{selectedIncident.status}</span></p>
 <p><small>Reported on: {formatLocalDateTime(selectedIncident.created_at)}</small></p>
@@ -510,14 +510,14 @@ const [showSupportModal, setShowSupportModal] = useState(false);
         <IonModal isOpen={showProfileModal} onDidDismiss={() => setShowProfileModal(false)}>
           <IonHeader >
             <IonToolbar>
-              <IonTitle className="settings">Edit Profile</IonTitle>
+              <IonTitle >Edit Profile</IonTitle>
               <IonButtons slot="end">
-                <IonButton className="setting" onClick={() => setShowProfileModal(false)}>Close</IonButton>
+                <IonButton onClick={() => setShowProfileModal(false)}>Close</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent className="ion-padding">
-            <IonItem className="setting">
+            <IonItem >
               <IonLabel position="floating">Full Name</IonLabel>
               <IonInput
                 value={fullName}
@@ -526,7 +526,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
               />
             </IonItem>
 
-            <IonItem className="setting">
+            <IonItem >
               <IonLabel position="floating">Email</IonLabel>
               <IonInput
                 type="email"
@@ -536,7 +536,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
               />
             </IonItem>
 
-            <IonItem className="setting">
+            <IonItem>
               <IonLabel position="floating">New Password</IonLabel>
               <IonInput
                 type={showPassword ? 'text' : 'password'}
@@ -557,7 +557,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
 
 <IonModal isOpen={showSettingsModal} onDidDismiss={() => setShowSettingsModal(false)}>
   <IonHeader>
-    <IonToolbar className="settings">
+    <IonToolbar >
       <IonTitle>Settings</IonTitle>
       <IonButtons slot="end">
         <IonButton onClick={() => setShowSettingsModal(false)}>Close</IonButton>
@@ -567,7 +567,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
 
   <IonContent className="ion-padding">
     {/* Dark Mode Toggle */}
-    <IonItem className="setting">
+    <IonItem >
       <IonLabel>Dark Mode</IonLabel>
       <IonToggle
         checked={darkMode}
@@ -577,7 +577,7 @@ const [showSupportModal, setShowSupportModal] = useState(false);
     </IonItem>
 
     {/* Font Size Selection */}
-    <IonItem className="setting">
+    <IonItem >
       <IonLabel>Font Size</IonLabel>
 <IonSelect
   value={fontSize}
@@ -600,9 +600,9 @@ const [showSupportModal, setShowSupportModal] = useState(false);
 <IonModal isOpen={showSupportModal} onDidDismiss={() => setShowSupportModal(false)}>
   <IonHeader>
     <IonToolbar>
-      <IonTitle className="settings">About RIPSEC</IonTitle>
+      <IonTitle >About RIPSEC</IonTitle>
       <IonButtons slot="end">
-        <IonButton className="settings" onClick={() => setShowSupportModal(false)}>Close</IonButton>
+        <IonButton  onClick={() => setShowSupportModal(false)}>Close</IonButton>
       </IonButtons>
     </IonToolbar>
   </IonHeader>
