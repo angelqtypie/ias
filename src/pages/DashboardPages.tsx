@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonButton,
   IonTextarea, IonSelect, IonSelectOption, IonLoading, IonToast, IonCard, IonCardHeader,
-  IonCardTitle, IonCardContent, IonLabel, IonItem, IonIcon, IonButtons 
+  IonCardTitle, IonCardContent, IonCheckbox, IonLabel, IonItem, IonIcon, IonButtons 
 } from '@ionic/react';
 import { supabase } from '../utils/supabaseClient';
+
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, Legend, XAxis, PieChart, Pie, Cell, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { useHistory } from 'react-router-dom';
-import { logOut, logOutOutline } from 'ionicons/icons';
+import { trashOutline, logOutOutline } from 'ionicons/icons';
 import '../components/DashboardPage.css';
 
 const AdminDashboard: React.FC = () => {
@@ -39,6 +40,8 @@ const [solutionDrafts, setSolutionDrafts] = useState<Record<string, string>>({})
 const [riskDrafts, setRiskDrafts] = useState<Record<string, string>>({});
 const [auditLogs, setAuditLogs] = useState<{ [incidentId: string]: AuditLog[] }>({});
 const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+const [toastMessage, setToastMessage] = useState('');
+const [showToast, setShowToast] = useState(false);
 
 
   const history = useHistory();
@@ -206,7 +209,7 @@ const fetchAuditLogs = async (incidentId: string) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('bia_reports')
-      .select('id, created_at, risk_level, operational, managerial, incident_id, incidents(title)')
+      .select('id, created_at, risk_level, operational, managerial, incident_id, incidents(title), bia_description')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -258,7 +261,36 @@ const handleMarkAsResolved = async (feedbackId: string): Promise<void> => {
   );
 };
 
+const [biaReportIncidents, setBiaReportIncidents] = useState<string[]>([]);
 
+useEffect(() => {
+  // On incidents load, set initial biaReportIncidents from incidents with bia_report === true
+  const selectedIds = incidents.filter(i => i.bia_report).map(i => i.id);
+  setBiaReportIncidents(selectedIds);
+}, [incidents]);
+
+const toggleBiaIncident = async (incidentId: string) => {
+  // Optimistically remove checkbox immediately (disable it visually)
+  setBiaReportIncidents(prev => [...prev, incidentId]); // add to selected
+
+  // Update Supabase
+  const { error } = await supabase
+    .from('incidents')
+    .update({ bia_report: true })  // always true on check
+    .eq('id', incidentId);
+
+  if (error) {
+    console.error('Failed to update BIA report flag:', error);
+    // Revert UI if failed
+    setBiaReportIncidents(prev => prev.filter(id => id !== incidentId));
+  }
+};
+useEffect(() => {
+  const storedHidden = localStorage.getItem('hiddenIncidents');
+  if (storedHidden) {
+    setHiddenIncidents(JSON.parse(storedHidden));
+  }
+}, []);
 
 const handleSendAdminSolution = async (feedbackId: string) => {
   const solution = selectedSolutions[feedbackId];
@@ -392,9 +424,23 @@ const updateStatus = async (id: number, newStatus: string) => {
 
 
  const saveNote = async (incidentId: string) => {
+  const incident = incidents.find(i => i.id === incidentId);
+  if (!incident) return;
+
   const admin_solution = solutionDrafts[incidentId] ?? null;
   const risk_level = riskDrafts[incidentId] ?? null;
   const admin_notes = noteDrafts[incidentId] ?? '';
+
+  const noChanges =
+    (admin_solution === (incident.admin_solution ?? null)) &&
+    (risk_level === (incident.risk_level ?? null)) &&
+    (admin_notes.trim() === (incident.admin_notes ?? '').trim());
+
+  if (noChanges) {
+    setToastMessage('No changes to save.');
+    setShowToast(true);
+    return;
+  }
 
   const { error } = await supabase
     .from('incidents')
@@ -407,65 +453,71 @@ const updateStatus = async (id: number, newStatus: string) => {
 
   if (error) {
     console.error(`Failed to update incident ${incidentId}:`, error.message);
-    // Optional: show IonToast for error
+    setToastMessage('Failed to save. Please try again.');
+    setShowToast(true);
   } else {
     console.log(`Incident ${incidentId} updated successfully.`);
-    // Optional: show IonToast for success
+    setToastMessage('Changes saved successfully.');
+    setShowToast(true);
   }
 };
 
 
 const submitBiaReport = async () => {
-    if (!selectedIncidentId || !selectedRiskLevel || !selectedOperational || !selectedManagerial) {
-      setToastMsg('All fields are required.');
-      return;
+  if (!selectedIncidentId || !selectedRiskLevel || !selectedOperational || !selectedManagerial) {
+    setToastMsg('All fields are required.');
+    return;
+  }
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('bia_reports')
+    .select('id')
+    .eq('incident_id', selectedIncidentId);
+
+  if (fetchError) {
+    setToastMsg('Error checking existing BIA: ' + fetchError.message);
+    return;
+  }
+
+  if (existing.length > 0) {
+    setToastMsg('A BIA report already exists for this incident.');
+    return;
+  }
+
+  setLoading(true);
+
+  const { error } = await supabase.from('bia_reports').insert([
+    {
+      incident_id: selectedIncidentId,
+      risk_level: selectedRiskLevel,
+      operational: selectedOperational,
+      managerial: selectedManagerial,
+      bia_description: biaDescription || null, // Added this field
     }
+  ]);
 
-    const { data: existing, error: fetchError } = await supabase
-      .from('bia_reports')
-      .select('id')
-      .eq('incident_id', selectedIncidentId);
+  if (error) {
+    setToastMsg('Error saving BIA: ' + error.message);
+  } else {
+    setToastMsg('BIA report submitted');
+    // Clear form
+    setSelectedIncidentId(null);
+    setSelectedIncidentTitle('');
+    setSelectedRiskLevel('');
+    setSelectedType('');
+    setOperationalRecs([]);
+    setManagerialRecs([]);
+    setSelectedOperational('');
+    setSelectedManagerial('');
+    setBiaDescription('');
+    fetchBIAReports();
+    setActiveView('biaReports');
+  }
 
-    if (fetchError) {
-      setToastMsg('Error checking existing BIA: ' + fetchError.message);
-      return;
-    }
+  setLoading(false);
+};
 
-    if (existing.length > 0) {
-      setToastMsg('A BIA report already exists for this incident.');
-      return;
-    }
-
-    setLoading(true);
-    const { error } = await supabase.from('bia_reports').insert([
-      {
-        incident_id: selectedIncidentId,
-        risk_level: selectedRiskLevel,
-        operational: selectedOperational,
-        managerial: selectedManagerial,
-        report_data: {
-          summary: 'Auto-generated BIA',
-          incidentTitle: selectedIncidentTitle
-        }
-      }
-    ]);
-    if (error) setToastMsg('Error saving BIA: ' + error.message);
-    else {
-      setToastMsg('BIA report submitted');
-      setSelectedIncidentId(null);
-      setSelectedIncidentTitle('');
-      setSelectedRiskLevel('');
-      setSelectedType('');
-      setOperationalRecs([]);
-      setManagerialRecs([]);
-      setSelectedOperational('');
-      setSelectedManagerial('');
-      fetchBIAReports();
-      setActiveView('biaReports');
-    }
-    setLoading(false);
-  };
-
+const [hiddenIncidents, setHiddenIncidents] = useState<string[]>([]);
 
 
 
@@ -475,7 +527,34 @@ const submitBiaReport = async () => {
     { status: 'Resolved', count: incidents.filter(i => i.status === 'Resolved').length }
   ];
   
+// Risk level chart data
+const riskChartData = [
+  { risk: 'Low', count: incidents.filter(i => i.risk_level === 'Low').length },
+  { risk: 'Medium', count: incidents.filter(i => i.risk_level === 'Medium').length },
+  { risk: 'High', count: incidents.filter(i => i.risk_level === 'High').length }
+];
 
+// Total reports summary
+const totalReports = incidents.length;
+const resolvedReports = incidents.filter(i => i.status === 'Resolved').length;
+const openReports = incidents.filter(i => i.status === 'Open').length;
+const inProgressReports = incidents.filter(i => i.status === 'In Progress').length;
+
+const totalFeedbacks = feedbacks.length;
+const resolvedFeedbacks = feedbacks.filter(fb => fb.status === 'Resolved').length;
+const pendingFeedbacks = totalFeedbacks - resolvedFeedbacks;
+
+  const [expandedTitles, setExpandedTitles] = useState<string[]>([]);
+
+  
+  // Toggle expanded state for a title
+  const toggleTitle = (title: string) => {
+    setExpandedTitles(prev =>
+      prev.includes(title)
+        ? prev.filter(t => t !== title)
+        : [...prev, title]
+    );
+  };
   const logout = async () => {
     await supabase.auth.signOut();
     history.push('/auth');
@@ -487,18 +566,22 @@ const submitBiaReport = async () => {
       Back to Dashboard
     </IonButton>
   );
+  
 
   const renderDashboard = () => (
     <div style={{ padding: 16 }}>
       <IonCard className="ion-margin-bottom">
-        <IonCardHeader><IonCardTitle>📊 Incident Status Overview</IonCardTitle></IonCardHeader>
+        <IonCardHeader><IonCardTitle className='incidentitle'>📊 Incident Status Overview</IonCardTitle></IonCardHeader>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <IonButton onClick={() => setActiveView('incidents')}>📋 View Incident Reports</IonButton>
           <IonButton onClick={() => setActiveView('bia')}>📝 Create BIA Report</IonButton>
           <IonButton onClick={() => setActiveView('biaReports')}>📄 View BIA Reports</IonButton>
           <IonButton onClick={() => setActiveView('feedbacks')}>📥 View User Feedback</IonButton>
         </div>
-        <IonCardContent>
+        <IonCardHeader>
+         <IonCardTitle className='incidentitle'>📈 Report Status Summary</IonCardTitle>
+        </IonCardHeader>
+         <IonCardContent>
           <div style={{ minHeight: 280 }}>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chartData}>
@@ -510,222 +593,343 @@ const submitBiaReport = async () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
+              <div style={{ textAlign: 'center', padding: '16px' }}>
+      <h2 style={{ fontSize: '2rem', color: '#3880ff' }}>{totalReports}</h2>
+      <p>Total Reports</p>
+      <p>🟢 {resolvedReports} Resolved</p>
+      <p>🟡 {inProgressReports} In Progress</p>
+      <p>🔴 {openReports} Open</p>
+    </div>
         </IonCardContent>
+<IonCard className="ion-margin-bottom">
+  <IonCardHeader>
+    <IonCardTitle className='incidentitle'>📊 Risk Level Overview</IonCardTitle>
+  </IonCardHeader>
+  <IonCardContent>
+<ResponsiveContainer width="100%" height={280}>
+  <PieChart>
+    <Pie
+      data={riskChartData}
+      dataKey="count"
+      nameKey="risk"
+      cx="50%"
+      cy="50%"
+      outerRadius={100}
+      label
+    >
+      {riskChartData.map((entry, index) => (
+        <Cell
+          key={`cell-${index}`}
+          fill={['#00C49F', '#FFBB28', '#FF8042'][index % 3]}
+        />
+      ))}
+    </Pie>
+    <Tooltip />
+    <Legend
+      layout="horizontal"
+      verticalAlign="bottom"
+      align="center"
+    />
+  </PieChart>
+</ResponsiveContainer>
+
+  </IonCardContent>
+</IonCard>
+
+<IonCard className="ion-margin-bottom">
+  <IonCardHeader>
+    <IonCardTitle className='incidentitle'>📈 Feedbacks Summary</IonCardTitle>
+  </IonCardHeader>
+ <IonCardContent>
+  <div style={{ textAlign: 'center', padding: '16px' }}>
+
+    <h2 style={{ fontSize: '1.5rem', color: '#3880ff' }}>{totalFeedbacks}</h2>
+    <p>Total Feedbacks</p>
+    <p>✅ {resolvedFeedbacks} Resolved</p>
+    <p>⏳ {pendingFeedbacks} Pending</p>
+  </div>
+</IonCardContent>
+</IonCard>
+
       </IonCard>
     </div>
   );
 
- const renderIncidents = () => (
-  <div style={{ padding: 16 }}>
-    <>
-      <BackToDashboardButton />
+const renderIncidents = () => {
+  const visibleIncidents = incidents.filter(i => !hiddenIncidents.includes(i.id));
 
-      {incidents.length === 0 ? (
-        <p style={{ padding: 16 }}>No incidents available.</p>
-      ) : (
-        <IonList>
-          {incidents.map((incident) => {
-            const typeKey = (incident.title || '').toLowerCase().trim();
-            const solutions = solutionsByType[typeKey] || [];
-            const reporter = usersMap[incident.reported_by] || 'Unknown';
+  return (
+    
+    <div style={{ padding: 16 }}>
+      <>
+        <BackToDashboardButton />
+     {/* Toast for save feedback */}
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMessage}
+        duration={2000}
+      />
+        {visibleIncidents.length === 0 ? (
+          <p style={{ padding: 16 }}>No incidents available.</p>
+        ) : (
+          <IonList>
+            {visibleIncidents.map((incident) => {
+              const typeKey = (incident.title || '').toLowerCase().trim();
+              const solutions = solutionsByType[typeKey] || [];
+              const reporter = usersMap[incident.reported_by] || 'Unknown';
 
-            return (
-              <IonCard key={incident.id} className="ion-margin-bottom">
-                <IonCardHeader>
-                  <IonCardTitle>{incident.title}</IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonItem>
-                    <IonLabel>Status:</IonLabel>
-                    <IonSelect
-                      value={incident.status}
-                      placeholder="Select Status"
-                      onIonChange={e => updateStatus(incident.id, e.detail.value!)}
-                      interface="alert"
-                    >
-                        <IonLabel className="ion-margin-top"><strong>Audit Log</strong></IonLabel>
-  <IonList>
-{auditLogs[incident.id]?.map((log: AuditLog) => (
-  <IonItem key={log.id}>
-    <IonLabel>
-      <p><em>{new Date(log.changed_at).toLocaleString()}</em> by {log.changed_by}</p>
-      <p><strong>{log.action}</strong>: {log.details}</p>
-    </IonLabel>
-  </IonItem>
-))}
-  </IonList>
-                      <IonSelectOption value="Open">Open</IonSelectOption>
-                      <IonSelectOption value="In Progress">Investigating</IonSelectOption>
-                      <IonSelectOption value="Resolved">Resolved</IonSelectOption>
-                    </IonSelect>
-                  </IonItem>
+              const isResolved = incident.status === 'Resolved';
+              const biaSelected = biaReportIncidents.includes(incident.id);
 
-                  <IonItem>
-                    <IonLabel>
-                      <strong>Reported by:</strong> {reporter}
-                    </IonLabel>
-                  </IonItem>
+              return (
+                <IonCard
+                  key={incident.id}
+                  className="ion-margin-bottom"
+                  style={{ opacity: isResolved ? 0.6 : 1 }}
+                >
+                  <IonCardHeader>
+                    <IonCardTitle className="incidentitle">
+                      {incident.title}{' '}
+                      {isResolved && (
+                        <small style={{ color: 'green', marginLeft: 8 }}>(Resolved)</small>
+                      )}
+                    </IonCardTitle>
+                  </IonCardHeader>
 
-                  <IonItem>
-                    <IonLabel>
-                      <strong>Reported at:</strong> {new Date(incident.created_at).toLocaleString()}
-                    </IonLabel>
-                  </IonItem>
-
-                  <IonItem>
-                    <IonLabel>
-                      <strong>Description:</strong> {incident.description}
-                    </IonLabel>
-                  </IonItem>
-
-                  {currentUserRole === 'admin' && (
-                    <>
-                      <IonLabel className="ion-margin-top">
-                        <strong>Admin Solution</strong>
-                      </IonLabel>
+                  <IonCardContent>
+                    <IonItem>
+                      <IonLabel>Status:</IonLabel>
                       <IonSelect
-                        placeholder="Select a solution"
-                        value={solutionDrafts[incident.id] ?? incident.admin_solution ?? ''}
-                        onIonChange={e =>
-                          setSolutionDrafts(prev => ({
-                            ...prev,
-                            [incident.id]: e.detail.value!,
-                          }))
-                        }
+                        value={incident.status}
+                        placeholder="Select Status"
+                        onIonChange={e => updateStatus(incident.id, e.detail.value!)}
                         interface="alert"
+                        disabled={isResolved}
                       >
-                        {solutions.map((sol, idx) => (
-                          <IonSelectOption key={idx} value={sol}>
-                            {sol}
-                          </IonSelectOption>
-                        ))}
+                        <IonSelectOption value="Open">Open</IonSelectOption>
+                        <IonSelectOption value="In Progress">Investigating</IonSelectOption>
+                        <IonSelectOption value="Resolved">Resolved</IonSelectOption>
                       </IonSelect>
+                    </IonItem>
 
-                      <IonLabel className="ion-margin-top">
-                        <strong>Risk Level</strong>
-                      </IonLabel>
-                      <IonSelect
-                        placeholder="Select Risk"
-                        value={riskDrafts[incident.id] ?? incident.risk_level ?? ''}
-                        onIonChange={e =>
-                          setRiskDrafts(prev => ({
-                            ...prev,
-                            [incident.id]: e.detail.value!,
-                          }))
-                        }
-                      >
-                        <IonSelectOption value="Low">Low</IonSelectOption>
-                        <IonSelectOption value="Medium">Medium</IonSelectOption>
-                        <IonSelectOption value="High">High</IonSelectOption>
-                      </IonSelect>
-                    </>
-                  )}
+                    <IonItem>
+                      <IonLabel><strong>Reported by:</strong> {reporter}</IonLabel>
+                    </IonItem>
 
-                  <IonLabel className="ion-margin-top">
-                    <strong>Admin Notes</strong>
-                  </IonLabel>
-                  <IonTextarea
-                    placeholder="Enter notes"
-                    value={noteDrafts[incident.id] ?? ''}
-                    onIonChange={e =>
-                      setNoteDrafts(prev => ({
-                        ...prev,
-                        [incident.id]: e.detail.value!,
-                      }))
-                    }
-                    rows={3}
-                  />
-                  <IonButton expand="block" onClick={() => saveNote(incident.id)} className="ion-margin-top">
+                    <IonItem>
+                      <IonLabel><strong>Reported at:</strong> {new Date(incident.created_at).toLocaleString()}</IonLabel>
+                    </IonItem>
+
+                    <IonItem>
+                      <IonLabel><strong>Description:</strong> {incident.description}</IonLabel>
+                    </IonItem>
+
+                    {currentUserRole === 'admin' && (
+                      <>
+                        <IonLabel className="ion-margin-top"><strong>Admin Solution</strong></IonLabel>
+                        <IonSelect
+                          placeholder="Select a solution"
+                          value={solutionDrafts[incident.id] ?? incident.admin_solution ?? ''}
+                          onIonChange={e =>
+                            setSolutionDrafts(prev => ({
+                              ...prev,
+                              [incident.id]: e.detail.value!,
+                            }))
+                          }
+                          interface="alert"
+                          disabled={isResolved}
+                        >
+                          {solutions.map((sol, idx) => (
+                            <IonSelectOption key={idx} value={sol}>{sol}</IonSelectOption>
+                          ))}
+                        </IonSelect>
+
+                        <IonLabel className="ion-margin-top"><strong>Risk Level</strong></IonLabel>
+                        <IonSelect
+                          placeholder="Select Risk"
+                          value={riskDrafts[incident.id] ?? incident.risk_level ?? ''}
+                          onIonChange={e =>
+                            setRiskDrafts(prev => ({
+                              ...prev,
+                              [incident.id]: e.detail.value!,
+                            }))
+                          }
+                          disabled={isResolved}
+                        >
+                          <IonSelectOption value="Low">Low</IonSelectOption>
+                          <IonSelectOption value="Medium">Medium</IonSelectOption>
+                          <IonSelectOption value="High">High</IonSelectOption>
+                        </IonSelect>
+                      </>
+                    )}
+
+                    <IonLabel className="ion-margin-top"><strong>Admin Notes</strong></IonLabel>
+                    <IonTextarea
+                      placeholder="Enter notes"
+                      value={noteDrafts[incident.id] ?? ''}
+                      onIonChange={e =>
+                        setNoteDrafts(prev => ({
+                          ...prev,
+                          [incident.id]: e.detail.value!,
+                        }))
+                      }
+                      rows={3}
+                      disabled={isResolved}
+                    />
+<IonButton
+  expand="block"
+  onClick={() => saveNote(incident.id)}
+  className="ion-margin-top"
+  disabled={
+    isResolved ||
+    (
+      (solutionDrafts[incident.id] ?? null) === (incident.admin_solution ?? null) &&
+      (riskDrafts[incident.id] ?? null) === (incident.risk_level ?? null) &&
+      (noteDrafts[incident.id]?.trim() ?? '') === (incident.admin_notes ?? '').trim()
+    )
+  }
+>
   Save
 </IonButton>
-                </IonCardContent>
-              </IonCard>
-            );
-          })}
-        </IonList>
-      )}
-    </>
-  </div>
-);
 
-const renderBIAForm = () => (
-  <div style={{ padding: 16 }}>
-    <BackToDashboardButton />
-    <IonCard className="ion-margin-bottom">
-      <IonCardHeader>
-        <IonCardTitle>Create New BIA Report</IonCardTitle>
-      </IonCardHeader>
-      <IonCardContent>
-        <IonLabel><strong>Select Incident</strong></IonLabel>
-        <IonSelect
-          placeholder="Select Incident"
-          onIonChange={e => {
-            const incidentId = e.detail.value;
-            const incident = incidents.find(i => i.id === incidentId);
-            if (!incident) return;
-            const type = (incident.title || '').toLowerCase().trim();
-            setSelectedIncidentId(incidentId);
-            setSelectedIncidentTitle(incident.title || '');
-            setSelectedType(type);
-            setOperationalRecs(recommendationsByType[type]?.operational || []);
-            setManagerialRecs(recommendationsByType[type]?.managerial || []);
-          }}
-        >
-          {incidents.map(i => (
-            <IonSelectOption key={i.id} value={i.id}>{i.title}</IonSelectOption>
-          ))}
-        </IonSelect>
+                    {/* Show Add to BIA checkbox only if resolved and not added */}
+                    {isResolved && !biaSelected && (
+                      <IonItem lines="none">
+                        <IonLabel>Add to BIA Report</IonLabel>
+                        <IonCheckbox
+                          checked={false}
+                          onIonChange={() => toggleBiaIncident(incident.id)}
+                        />
+                      </IonItem>
+                    )}
 
-        <IonLabel className="ion-margin-top"><strong>Risk Level</strong></IonLabel>
-        <IonSelect
-          placeholder="Select Risk Level"
-          value={selectedRiskLevel}
-          onIonChange={e => setSelectedRiskLevel(e.detail.value)}
-        >
-          <IonSelectOption value="Low">Low</IonSelectOption>
-          <IonSelectOption value="Medium">Medium</IonSelectOption>
-          <IonSelectOption value="High">High</IonSelectOption>
-        </IonSelect>
-
-        {operationalRecs.length > 0 && (
-          <>
-            <IonLabel className="ion-margin-top"><strong>Operational Recommendation</strong></IonLabel>
-            <IonSelect
-              placeholder="Select Operational Recommendation"
-              value={selectedOperational}
-              onIonChange={e => setSelectedOperational(e.detail.value)}
-            >
-              {operationalRecs.map((rec, idx) => (
-                <IonSelectOption key={idx} value={rec}>{rec}</IonSelectOption>
-              ))}
-            </IonSelect>
-          </>
+                    {/* Show Delete icon ONLY if resolved and already added */}
+                    {isResolved && biaSelected && (
+                      <IonItem lines="none" style={{ justifyContent: 'flex-center' }}>
+                        <IonButton
+                        className="delete-icon-button"
+                          color="danger"
+                          fill="clear"
+                          size="large"
+                        onClick={() => {
+  const updated = [...hiddenIncidents, incident.id];
+  setHiddenIncidents(updated);
+  localStorage.setItem('hiddenIncidents', JSON.stringify(updated));
+}}
+ aria-label="Delete Report"
+                        >
+                          <IonIcon icon={trashOutline} slot="icon-only" />
+                        </IonButton>
+                      </IonItem>
+                    )}
+                  </IonCardContent>
+                </IonCard>
+              );
+            })}
+          </IonList>
         )}
+      </>
+    </div>
+  );
+};
 
-        {managerialRecs.length > 0 && (
-          <>
-            <IonLabel className="ion-margin-top"><strong>Managerial Recommendation</strong></IonLabel>
-            <IonSelect
-              placeholder="Select Managerial Recommendation"
-              value={selectedManagerial}
-              onIonChange={e => setSelectedManagerial(e.detail.value)}
-            >
-              {managerialRecs.map((rec, idx) => (
-                <IonSelectOption key={idx} value={rec}>{rec}</IonSelectOption>
-              ))}
-            </IonSelect>
-          </>
-        )}
 
-        <IonButton expand="block" className="ion-margin-top" onClick={submitBiaReport}>
-          Submit BIA Report
-        </IonButton>
-      </IonCardContent>
-    </IonCard>
-  </div>
-);
+const renderBIAForm = () => {
+  const biaEligibleIncidents = incidents.filter(i => i.bia_report); // ← Only those marked true
 
- const renderBIAReports = () => (
+  return (
+    <div style={{ padding: 16 }}>
+      <BackToDashboardButton />
+      <IonCard className="ion-margin-bottom">
+        <IonCardHeader>
+          <IonCardTitle>Create New BIA Report</IonCardTitle>
+        </IonCardHeader>
+        <IonCardContent>
+          <IonLabel><strong>Select Incident</strong></IonLabel>
+          <IonSelect
+            placeholder="Select Incident"
+            onIonChange={e => {
+              const incidentId = e.detail.value;
+              const incident = incidents.find(i => i.id === incidentId);
+              if (!incident) return;
+              const type = (incident.title || '').toLowerCase().trim();
+              setSelectedIncidentId(incidentId);
+              setSelectedIncidentTitle(incident.title || '');
+              setSelectedType(type);
+              setOperationalRecs(recommendationsByType[type]?.operational || []);
+              setManagerialRecs(recommendationsByType[type]?.managerial || []);
+            }}
+          >
+            {biaEligibleIncidents.map(i => (
+              <IonSelectOption key={i.id} value={i.id}>
+                {i.title}
+              </IonSelectOption>
+            ))}
+          </IonSelect>
+
+          <IonLabel className="ion-margin-top"><strong>Risk Level</strong></IonLabel>
+          <IonSelect
+            placeholder="Select Risk Level"
+            value={selectedRiskLevel}
+            onIonChange={e => setSelectedRiskLevel(e.detail.value)}
+          >
+            <IonSelectOption value="Low">Low</IonSelectOption>
+            <IonSelectOption value="Medium">Medium</IonSelectOption>
+            <IonSelectOption value="High">High</IonSelectOption>
+          </IonSelect>
+
+          {operationalRecs.length > 0 && (
+            <>
+              <IonLabel className="ion-margin-top"><strong>Operational Recommendation</strong></IonLabel>
+              <IonSelect
+                placeholder="Select Operational Recommendation"
+                value={selectedOperational}
+                onIonChange={e => setSelectedOperational(e.detail.value)}
+              >
+                {operationalRecs.map((rec, idx) => (
+                  <IonSelectOption key={idx} value={rec}>{rec}</IonSelectOption>
+                ))}
+              </IonSelect>
+            </>
+          )}
+
+          {managerialRecs.length > 0 && (
+            <>
+              <IonLabel className="ion-margin-top"><strong>Managerial Recommendation</strong></IonLabel>
+              <IonSelect
+                placeholder="Select Managerial Recommendation"
+                value={selectedManagerial}
+                onIonChange={e => setSelectedManagerial(e.detail.value)}
+              >
+                {managerialRecs.map((rec, idx) => (
+                  <IonSelectOption key={idx} value={rec}>{rec}</IonSelectOption>
+                ))}
+              </IonSelect>
+            </>
+          )}
+
+          <IonLabel className="ion-margin-top"><strong>BIA Summary (optional)</strong></IonLabel>
+          <IonTextarea
+            placeholder="Why this risk level and recommendations?"
+            value={biaDescription}
+            onIonChange={(e: CustomEvent) => setBiaDescription((e.detail.value || ''))}
+          />
+
+          <IonButton
+            expand="block"
+            className="ion-margin-top"
+            onClick={submitBiaReport}
+          >
+            Submit BIA Report
+          </IonButton>
+        </IonCardContent>
+      </IonCard>
+    </div>
+  );
+};
+
+const renderBIAReports = () => (
   <div className="ion-padding">
     <BackToDashboardButton />
     {biaReports.length === 0 ? (
@@ -742,10 +946,14 @@ const renderBIAForm = () => (
                 <IonCardTitle>{bia.incidents?.title || 'Untitled Incident'}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <p><strong>Risk Level:</strong> {bia.risk_level}</p>
-                <p><strong>Operational:</strong> {bia.operational}</p>
-                <p><strong>Managerial:</strong> {bia.managerial}</p>
-                <p><strong>Created At:</strong> {new Date(bia.created_at).toLocaleString()}</p>
+
+  <p><strong>Risk Level:</strong> {bia.risk_level}</p>
+  <p><strong>Operational:</strong> {bia.operational}</p>
+  <p><strong>Managerial:</strong> {bia.managerial}</p>
+  <p><strong>Summary:</strong> {bia.bia_description || 'No summary provided.'}</p>
+  <p><strong>Created At:</strong> {new Date(bia.created_at).toLocaleString()}</p>
+
+
               </IonCardContent>
             </IonCard>
           ))}
@@ -754,6 +962,7 @@ const renderBIAForm = () => (
     )}
   </div>
 );
+
 
 const renderFeedbacks = () => (
   <div style={{ padding: 16 }}>
@@ -839,7 +1048,12 @@ return (
 
     <IonHeader>
       <IonToolbar>
-        <IonTitle>CipherOps Admin Dashboard</IonTitle>
+           <IonTitle className="ion-text-center">
+             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+               <img src="https://i.postimg.cc/J4qY9FkM/20250527-2051-RIPSEC-Logo-Design-simple-compose-01jw8wm8tnf719wz513heerw7f-1-removebg-preview.png" alt="RIPSEC Logo" style={{ height: '50px' }} />
+               <span style={{ fontWeight: 700, fontSize: 'var(--font-size-heading)' }}>RIPSEC Admin Dashboard</span>
+             </div>
+           </IonTitle>
         <IonButtons slot="end">
           <IonButton onClick={logout}>LOGOUT
             <IonIcon icon={logOutOutline} slot="start" color='black'/>

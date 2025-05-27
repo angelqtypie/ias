@@ -4,15 +4,22 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.incidentitle {
+  text-align-last: center;
+  color: #1a202c !important;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
 .admin-dashboard ion-card {
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   background: white;
   transition: box-shadow 0.3s ease;
 }
 
 .admin-dashboard ion-card:hover {
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .admin-dashboard ion-card-header {
@@ -22,18 +29,20 @@
   border-top-right-radius: 12px;
   padding: 12px 16px;
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   text-transform: uppercase;
 }
 
 .admin-dashboard ion-card-title {
   font-weight: 700;
   font-size: 1.25rem;
+  color: #2d3748;
 }
 
 .admin-dashboard ion-card-content {
   padding: 16px;
-  color: #2d3748;
+  color: #2d3748 !important;
+  background-color: #ffffff;
 }
 
 .admin-dashboard ion-button {
@@ -42,7 +51,7 @@
   --color: #fff;
   border-radius: 6px;
   font-weight: 600;
-  box-shadow: 0 2px 10px rgba(49,130,206,0.3);
+  box-shadow: 0 2px 10px rgba(49, 130, 206, 0.3);
   transition: background-color 0.3s ease;
 }
 
@@ -52,7 +61,7 @@
 
 .admin-dashboard ion-label {
   font-weight: 600;
-  color: #4a5568;
+  color: #4a5568 !important;
   margin-bottom: 6px;
   display: block;
 }
@@ -62,7 +71,8 @@
   border-radius: 6px;
   padding: 8px;
   font-size: 1rem;
-  color: #2d3748;
+  color: #2d3748 !important;
+  background-color: #fff;
   transition: border-color 0.3s ease;
 }
 
@@ -72,30 +82,65 @@
 }
 
 .admin-dashboard ion-select {
-  --background: #edf2f7;
-  border-radius: 6px;
+  --background: #ffffff;
+  border-radius: 10px;
   padding: 8px;
   font-size: 1rem;
   --placeholder-color: #a0aec0;
   --color: #2d3748;
+  background-color: #ffffff;
+}
+
+/* FIX IonSelect ALERT MODAL */
+.alert-wrapper {
+  background-color: #ffffff !important;
+  color: #1a202c !important;
+}
+
+.alert-radio-label,
+.alert-title,
+.alert-button {
+  color: #1a202c !important;
+}
+
+/* Enhance Trash Button */
+.admin-dashboard .delete-icon-button {
+  --color: #e53e3e !important;
+  font-size: 1.3rem;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+.admin-dashboard .delete-icon-button:hover {
+  background: rgba(229, 62, 62, 0.1);
 }
 
 .admin-dashboard table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #2d3748;
+  background-color: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .admin-dashboard thead tr {
   background-color: #2b6cb0;
   color: white;
+  font-weight: 600;
 }
 
 .admin-dashboard th,
 .admin-dashboard td {
-  padding: 10px 12px;
-  border: 1px solid #cbd5e0;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e2e8f0;
   text-align: left;
 }
 
@@ -105,6 +150,11 @@
 
 .admin-dashboard tbody tr:hover {
   background-color: #bee3f8;
+  cursor: default;
+}
+
+.admin-dashboard tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .admin-dashboard .responsive-container {
@@ -155,44 +205,6 @@
   vertical-align: middle;
 }
 
-.admin-dashboard table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 1rem;
-  color: #2d3748;
-  background-color: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.admin-dashboard thead tr {
-  background-color: #2b6cb0;
-  color: white;
-  font-weight: 600;
-}
-
-.admin-dashboard th,
-.admin-dashboard td {
-  padding: 12px 15px;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-}
-
-.admin-dashboard tbody tr:nth-child(even) {
-  background-color: #f7fafc;
-}
-
-.admin-dashboard tbody tr:hover {
-  background-color: #bee3f8;
-  cursor: default;
-}
-
-.admin-dashboard tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* Responsive tweaks */
 @media (max-width: 768px) {
   .admin-dashboard table,
   .admin-dashboard thead,
@@ -212,7 +224,7 @@
   .admin-dashboard tbody tr {
     margin-bottom: 15px;
     background-color: #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     padding: 10px;
   }
@@ -241,4 +253,9 @@
   .admin-dashboard tbody td:nth-of-type(3)::before { content: "Risk Level"; }
   .admin-dashboard tbody td:nth-of-type(4)::before { content: "Status"; }
   .admin-dashboard tbody td:nth-of-type(5)::before { content: "Remarks"; }
+}
+
+.lables {
+  color: #ffffff;
+  font-weight: 600;
 }

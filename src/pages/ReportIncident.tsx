@@ -24,6 +24,7 @@ import {
 import { alertCircleOutline, logOutOutline } from 'ionicons/icons';
 import { supabase } from '../utils/supabaseClient';
 import { useIonRouter } from '@ionic/react';
+import '../components/Welcome.css'
 
 const ReportIncident: React.FC = () => {
   const [title, setTitle] = useState<string>('');
@@ -75,7 +76,16 @@ const ReportIncident: React.FC = () => {
       <IonHeader>
         <IonToolbar color="danger">
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/" />
+       <IonButtons slot="start">
+  <IonButton fill="clear" onClick={() => history.back()} style={{ padding: 0 }}>
+    <img
+      src="https://i.postimg.cc/J4qY9FkM/20250527-2051-RIPSEC-Logo-Design-simple-compose-01jw8wm8tnf719wz513heerw7f-1-removebg-preview.png"
+      alt="Back"
+      style={{ height: '50px' }}
+    />
+  </IonButton>
+</IonButtons>
+
           </IonButtons>
           <IonTitle>🚨 Report Security Issue</IonTitle>
           <IonButtons slot="end">
@@ -94,33 +104,36 @@ const ReportIncident: React.FC = () => {
         }}
       >
         <IonCard color="light" className="ion-padding">
-          <IonCardHeader>
+          <IonCardHeader className="settings">
             <IonCardTitle>
               <IonIcon icon={alertCircleOutline} /> Incident Details
             </IonCardTitle>
           </IonCardHeader>
-          <IonCardContent>
-            <IonItem className="ion-margin-bottom">
-              <IonLabel>What happened?</IonLabel>
-              <IonSelect
-                placeholder="Choose an incident type"
-                value={title}
-                onIonChange={(e) => setTitle(e.detail.value)}
-              >
-                <IonSelectOption value="Unauthorized Access">Unauthorized Access</IonSelectOption>
-                <IonSelectOption value="Data Breach">Data Breach</IonSelectOption>
-                <IonSelectOption value="Phishing Attempt">Phishing Attempt</IonSelectOption>
-                <IonSelectOption value="Malware Infection">Malware Infection</IonSelectOption>
-                <IonSelectOption value="Lost Device">Lost Device</IonSelectOption>
-              </IonSelect>
+          <IonCardContent >
+            <IonItem  color={'dark'}>
+              <IonLabel >What happened?</IonLabel>
+         <IonSelect
+  placeholder="Choose an incident type"
+  value={title}
+  onIonChange={(e) => setTitle(e.detail.value)}
+  interfaceOptions={{ cssClass: 'custom-select-alert' }}
+>
+  <IonSelectOption value="Unauthorized Access">Unauthorized Access</IonSelectOption>
+  <IonSelectOption value="Data Breach">Data Breach</IonSelectOption>
+  <IonSelectOption value="Phishing Attempt">Phishing Attempt</IonSelectOption>
+  <IonSelectOption value="Malware Infection">Malware Infection</IonSelectOption>
+  <IonSelectOption value="Lost Device">Lost Device</IonSelectOption>
+</IonSelect>
+
             </IonItem>
 
-            <IonItem className="ion-margin-bottom">
+            <IonItem  color={'dark'}>
               <IonLabel>How severe is it?</IonLabel>
               <IonSelect
                 placeholder="Select severity level"
                 value={severity}
                 onIonChange={(e) => setSeverity(e.detail.value)}
+                 interfaceOptions={{ cssClass: 'custom-select-alert' }}
               >
                 <IonSelectOption value="low">Low</IonSelectOption>
                 <IonSelectOption value="medium">Medium</IonSelectOption>
@@ -128,7 +141,7 @@ const ReportIncident: React.FC = () => {
               </IonSelect>
             </IonItem>
 
-            <IonItem className="ion-margin-bottom">
+            <IonItem  color={'dark'}>
               <IonLabel position="floating">Additional details (optional)</IonLabel>
               <IonTextarea
                 autoGrow

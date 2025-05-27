@@ -93,7 +93,7 @@ const CreatePage: React.FC = () => {
   };
 
   return (
-    <IonPage>
+    <IonPage >
       <IonContent className="ion-padding" style={{
         background: 'linear-gradient(135deg, #ff6f61, #ff9e7f)', // Bright gradient background
         minHeight: '100vh',
@@ -158,7 +158,7 @@ const CreatePage: React.FC = () => {
 
                 <IonCol size="12">
                   <IonItem>
-                    <IonLabel position="stacked" style={{ color: 'black' }}>Select Role</IonLabel>
+                    <IonLabel position="stacked" style={{ color: 'white' }}>Select Role</IonLabel>
                     <select
                       style={{
                         width: '100%',
@@ -209,7 +209,7 @@ const CreatePage: React.FC = () => {
                 </IonCol>
 
                 <IonCol size="12" style={{ marginTop: '10px' }}>
-                  <IonButton routerLink="/auth" expand="block" fill="clear" shape="round" color="light">
+                  <IonButton routerLink="/auth" expand="block" fill="clear" shape="round" color="dark">
                     Already have an account? Sign in
                   </IonButton>
                 </IonCol>

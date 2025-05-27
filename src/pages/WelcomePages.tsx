@@ -2,7 +2,7 @@
 import {
   IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonButton,
   IonText, IonGrid, IonRow, IonCol, IonIcon, IonButtons, IonItem, IonLabel,
-  IonInput, IonModal, IonSelect, IonSelectOption, IonTextarea, IonCard, IonCardHeader, IonCardTitle, IonCardContent
+  IonInput, IonModal, IonSelect, IonSelectOption, IonToggle, IonTextarea, IonCard, IonCardHeader, IonCardTitle, IonCardContent
 } from '@ionic/react';
 import {
   logOutOutline, alertCircleOutline, personCircleOutline,
@@ -11,6 +11,8 @@ import {
 } from 'ionicons/icons';
 import { useIonRouter, useIonToast } from '@ionic/react';
 import { supabase } from '../utils/supabaseClient';
+import { formatLocalDateTime } from '../utils/dateUtils'; 
+import { useHistory } from 'react-router-dom';
 import '../components/Welcome.css';
 
 interface Incident {
@@ -55,6 +57,25 @@ const WelcomePage: React.FC = () => {
   const [adminSolutions, setAdminSolutions] = useState<Record<number, Feedback[]>>({});
 const [showAdminDetails, setShowAdminDetails] = useState(false);
 
+
+const [darkMode, setDarkMode] = useState(false);
+const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+const [showSupportModal, setShowSupportModal] = useState(false);
+
+
+  // Add this useEffect to toggle the dark class on <body>
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  useEffect(() => {
+  document.body.classList.remove('font-small', 'font-medium', 'font-large');
+  document.body.classList.add(`font-${fontSize}`);
+}, [fontSize]);
 
   const quotes = [
     "Security is not a product, it's a process.",
@@ -237,15 +258,27 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
       case 'investigating': return 'orange';
       case 'resolved': return 'green';
       case 'closed': return 'gray';
-      default: return 'yellow';
+      default: return 'white';
     }
   };
+
+  const history = useHistory();
+    const logout = async () => {
+      await supabase.auth.signOut();
+      history.push('/welcome');
+  
+    };
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Welcome, {fullName || 'User'}</IonTitle>
+    <IonTitle className="ion-text-center">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={logout}>
+        <img src="https://i.postimg.cc/J4qY9FkM/20250527-2051-RIPSEC-Logo-Design-simple-compose-01jw8wm8tnf719wz513heerw7f-1-removebg-preview.png" alt="RIPSEC Logo" style={{ height: '50px' }} />
+        <span style={{ fontWeight: 700, fontSize: 'var(--font-size-heading)' }}>RIPSEC</span>
+      </div>
+    </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleLogout} color="light">
               <IonIcon icon={logOutOutline} slot="start" />
@@ -259,8 +292,8 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
         <IonGrid>
           <IonRow className="ion-justify-content-center ion-text-center ion-margin-top">
             <IonCol size="12" sizeMd="8" sizeLg="6">
-              <h2 style={{ fontWeight: 700, fontSize: '26px' }}>👋 Hello, {fullName || 'User'}!</h2>
-              <p style={{ fontSize: '16px', margin: '10px 0', fontStyle: 'italic' }}>
+              <h2 style={{ fontWeight: 700, fontSize: 'var(--font-size-heading)' }}>👋 Hello, {fullName || 'User'}!</h2>
+              <p style={{ fontSize: 'var(--font-size-base)', margin: '10px 0', fontStyle: 'italic' }}>
                 “{quote}”
               </p>
 
@@ -302,10 +335,11 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
                     </IonButton>
                   </IonCol>
                   <IonCol>
-                    <IonButton expand="block" fill="outline">
-                      <IonIcon icon={helpCircleOutline} slot="start" />
-                      Support
-                    </IonButton>
+<IonButton expand="block" fill="outline" onClick={() => setShowSupportModal(true)}>
+  <IonIcon icon={helpCircleOutline} slot="start" />
+  About
+</IonButton>
+
                   </IonCol>
                 </IonRow>
               </IonGrid>
@@ -315,7 +349,7 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
 
 <IonModal isOpen={showIncidentModal} onDidDismiss={() => { setShowIncidentModal(false); setSelectedIncident(null); }}>
   <IonHeader>
-    <IonToolbar>
+    <IonToolbar className='settings'>
       <IonTitle>My Incident Reports</IonTitle>
       <IonButtons slot="end">
         <IonButton onClick={() => setShowIncidentModal(false)}>Close</IonButton>
@@ -334,9 +368,9 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
           onClick={() => setSelectedIncident(incident)}
         >
           <IonLabel>
-            <h3>{incident.title}</h3>
+            <h2 className='setting'>{incident.title}</h2>
             <p>Status: <span style={{ color: statusColor(incident.status) }}>{incident.status}</span></p>
-            <p>{new Date(incident.created_at).toLocaleString()}</p>
+            <p>{formatLocalDateTime(incident.created_at)}</p>
           </IonLabel>
         </IonItem>
       ))
@@ -346,10 +380,11 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
       <>
         <IonItem lines="none" className="ion-padding-top">
           <IonLabel>
-            <h2>{selectedIncident.title}</h2>
-            <p>{selectedIncident.description}</p>
+            <h1 className='setting'>{selectedIncident.title}</h1>
+            <p><strong>Report Description:</strong> <span style={{ color: statusColor(selectedIncident.description) }}>{selectedIncident.description}</span></p>
             <p><strong>Status:</strong> <span style={{ color: statusColor(selectedIncident.status) }}>{selectedIncident.status}</span></p>
-            <p><small>Reported on: {new Date(selectedIncident.created_at).toLocaleString()}</small></p>
+<p><small>Reported on: {formatLocalDateTime(selectedIncident.created_at)}</small></p>
+
           </IonLabel>
         </IonItem>
 
@@ -360,7 +395,7 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
           onClick={() => setShowAdminDetails(prev => !prev)}
           className="ion-margin-top"
         >
-          {showAdminDetails ? 'Hide Admin Details' : 'View Admin Details'}
+          {showAdminDetails ? 'Hide Admin Feedbacks' : 'View Admin Feedbacks'}
         </IonButton>
 
         {/* ADMIN DETAILS SECTION */}
@@ -405,11 +440,11 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
           className="ion-margin-top"
         >
           <IonIcon icon={helpCircleOutline} slot="start" />
-          Provide Feedback
+          Send Us Feedbacks
         </IonButton>
 
         <IonText className="ion-padding">
-          <h3>Feedbacks</h3>
+          <h3>Your Feedbacks</h3>
           {feedbacks[selectedIncident.id]?.length ? (
             feedbacks[selectedIncident.id].map(fb => (
               <div key={fb.id} style={{ border: '1px solid #ccc', borderRadius: 4, padding: '6px 10px', margin: '6px 0' }}>
@@ -430,32 +465,39 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
 
  {/* Feedback Submission Modal */}
         <IonModal isOpen={showFeedbackModal} onDidDismiss={() => setShowFeedbackModal(false)}>
-          <IonHeader>
+          <IonHeader >
             <IonToolbar>
-              <IonTitle>Add Feedback</IonTitle>
+              <IonTitle color={'dark'}>Add Feedback</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowFeedbackModal(false)}>Cancel</IonButton>
+                <IonButton color={'dark'} onClick={() => setShowFeedbackModal(false)}>Cancel</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent className="ion-padding">
             <IonItem>
-              <IonLabel>Feedback Type</IonLabel>
-              <IonSelect
-                value={feedbackType}
-                placeholder="Select Type"
-                onIonChange={e => setFeedbackType(e.detail.value)}
-              >
-                <IonSelectOption value="Suggestion">Suggestion</IonSelectOption>
-                <IonSelectOption value="Issue">Issue</IonSelectOption>
-                <IonSelectOption value="Question">Question</IonSelectOption>
-              </IonSelect>
+              <IonLabel color={'dark'}>Feedback Type</IonLabel>
+          <IonSelect
+  interface="alert"
+  value={feedbackType}
+  placeholder="Select Type"
+  onIonChange={e => setFeedbackType(e.detail.value)}
+  interfaceOptions={{
+    header: "Select Feedback Type",
+    cssClass: darkMode ? 'dark-select' : 'light-select'
+  }}
+>
+  <IonSelectOption value="Suggestion">Suggestion</IonSelectOption>
+  <IonSelectOption value="Issue">Issue</IonSelectOption>
+  <IonSelectOption value="Question">Question</IonSelectOption>
+</IonSelect>
+
             </IonItem>
-            <IonItem>
+            <IonItem color={'light'}>
               <IonLabel position="floating">Feedback Text</IonLabel>
               <IonTextarea
                 value={feedbackText}
                 onIonChange={e => setFeedbackText(e.detail.value!)}
+              
               />
             </IonItem>
             <IonButton expand="block" onClick={submitFeedback} disabled={!feedbackType || !feedbackText.trim()}>
@@ -466,16 +508,16 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
 
         {/* Profile Modal */}
         <IonModal isOpen={showProfileModal} onDidDismiss={() => setShowProfileModal(false)}>
-          <IonHeader>
+          <IonHeader >
             <IonToolbar>
-              <IonTitle>Edit Profile</IonTitle>
+              <IonTitle className="settings">Edit Profile</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowProfileModal(false)}>Close</IonButton>
+                <IonButton className="setting" onClick={() => setShowProfileModal(false)}>Close</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent className="ion-padding">
-            <IonItem>
+            <IonItem className="setting">
               <IonLabel position="floating">Full Name</IonLabel>
               <IonInput
                 value={fullName}
@@ -484,7 +526,7 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
               />
             </IonItem>
 
-            <IonItem>
+            <IonItem className="setting">
               <IonLabel position="floating">Email</IonLabel>
               <IonInput
                 type="email"
@@ -494,7 +536,7 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
               />
             </IonItem>
 
-            <IonItem>
+            <IonItem className="setting">
               <IonLabel position="floating">New Password</IonLabel>
               <IonInput
                 type={showPassword ? 'text' : 'password'}
@@ -513,20 +555,81 @@ const [showAdminDetails, setShowAdminDetails] = useState(false);
           </IonContent>
         </IonModal>
 
-        {/* Settings Modal (placeholder) */}
-        <IonModal isOpen={showSettingsModal} onDidDismiss={() => setShowSettingsModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Settings</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowSettingsModal(false)}>Close</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent className="ion-padding">
-            <p>No settings configured yet.</p>
-          </IonContent>
-        </IonModal>
+<IonModal isOpen={showSettingsModal} onDidDismiss={() => setShowSettingsModal(false)}>
+  <IonHeader>
+    <IonToolbar className="settings">
+      <IonTitle>Settings</IonTitle>
+      <IonButtons slot="end">
+        <IonButton onClick={() => setShowSettingsModal(false)}>Close</IonButton>
+      </IonButtons>
+    </IonToolbar>
+  </IonHeader>
+
+  <IonContent className="ion-padding">
+    {/* Dark Mode Toggle */}
+    <IonItem className="setting">
+      <IonLabel>Dark Mode</IonLabel>
+      <IonToggle
+        checked={darkMode}
+        onIonChange={e => setDarkMode(e.detail.checked)}
+        
+      />
+    </IonItem>
+
+    {/* Font Size Selection */}
+    <IonItem className="setting">
+      <IonLabel>Font Size</IonLabel>
+<IonSelect
+  value={fontSize}
+  placeholder="Select Font Size"
+  interface="alert"
+  onIonChange={e => setFontSize(e.detail.value)}
+  interfaceOptions={{
+    cssClass: darkMode ? 'dark-select' : ''
+  }}
+>
+  <IonSelectOption value="small">Small</IonSelectOption>
+  <IonSelectOption value="medium">Medium</IonSelectOption>
+  <IonSelectOption value="large">Large</IonSelectOption>
+</IonSelect>
+
+    </IonItem>
+  </IonContent>
+</IonModal>
+
+<IonModal isOpen={showSupportModal} onDidDismiss={() => setShowSupportModal(false)}>
+  <IonHeader>
+    <IonToolbar>
+      <IonTitle className="settings">About RIPSEC</IonTitle>
+      <IonButtons slot="end">
+        <IonButton className="settings" onClick={() => setShowSupportModal(false)}>Close</IonButton>
+      </IonButtons>
+    </IonToolbar>
+  </IonHeader>
+  <IonContent className="ion-padding">
+    <h2>What is RIPSEC?</h2>
+    <p><strong>RIPSEC</strong> stands for <strong>Reporting Incidents and Protecting Security</strong>.</p>
+    
+    <p>
+      RIPSEC is a lightweight yet powerful tool designed to help organizations manage security incidents effectively. 
+      Whether you're handling day-to-day operations or overseeing broader security strategies, RIPSEC provides the tools to respond quickly, confidently, and securely.
+    </p>
+
+    <h3>Key Features</h3>
+    <ul>
+      <li>✅ Role-based access for admins and users</li>
+      <li>✅ Secure handling of confidential data</li>
+      <li>✅ Real-time incident reporting and tracking</li>
+      <li>✅ Business Impact Analysis to prioritize severity-based responses</li>
+    </ul>
+
+    <p>
+      With RIPSEC, teams can improve incident visibility, streamline response workflows, and make informed decisions to safeguard their organization.
+    </p>
+  </IonContent>
+</IonModal>
+
+
       </IonContent>
     </IonPage>
   );

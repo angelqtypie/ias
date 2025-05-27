@@ -1,68 +1,218 @@
-/* 📁 src/components/Welcome.css */
+/* Light mode base colors (default, no .dark class on body) */
+body {
+  --ion-background-color: #ffffff;
+  --ion-text-color: #000000;
 
+  /* Ionic component colors */
+  --ion-color-primary: #3880ff;
+  --ion-color-primary-rgb: 56, 128, 255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #3171e0;
+  --ion-color-primary-tint: #4c8dff;
+
+  --ion-color-secondary: #3dc2ff;
+  --ion-color-secondary-rgb: 61, 194, 255;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #36abe0;
+  --ion-color-secondary-tint: #50c8ff;
+
+  --ion-background-color-rgb: 255, 255, 255;
+  --ion-text-color-rgb: 0, 0, 0;
+}
+
+/* Dark mode base colors */
 body.dark {
   --ion-background-color: #121212;
   --ion-text-color: #ffffff;
-  background-color: #121212;
-  color: #ffffff;
+
+  /* Ionic component colors */
+  --ion-color-primary: #bb86fc;
+  --ion-color-primary-rgb: 187, 134, 252;
+  --ion-color-primary-contrast: #000000;
+  --ion-color-primary-contrast-rgb: 0, 0, 0;
+  --ion-color-primary-shade: #9a6efc;
+  --ion-color-primary-tint: #c39bff;
+
+  --ion-color-secondary: #03dac6;
+  --ion-color-secondary-rgb: 3, 218, 198;
+  --ion-color-secondary-contrast: #000000;
+  --ion-color-secondary-contrast-rgb: 0, 0, 0;
+  --ion-color-secondary-shade: #02c8b7;
+  --ion-color-secondary-tint: #2ee7ce;
+
+  --ion-background-color-rgb: 18, 18, 18;
+  --ion-text-color-rgb: 255, 255, 255;
+}
+
+/* Component-specific dark mode adjustments */
+body.dark ion-card,
+body.dark ion-item {
+  background: #1e1e1e;
+  color: var(--ion-text-color);
+}
+
+body.dark ion-header,
+body.dark ion-toolbar {
+  background: #1a1a1a;
+  color: var(--ion-text-color);
+}
+
+body.dark ion-modal {
+  background: #121212;
+  color: var(--ion-text-color);
+}
+.setting {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --min-height: 48px;
+  color:#ffffff;
+}
+
+.settings {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color:#ffffff;
+}
+
+body.font-small {
+  --font-size-base: 14px;
+  --font-size-heading: 22px;
+}
+
+body.font-medium {
+  --font-size-base: 16px;
+  --font-size-heading: 26px;
+}
+
+body.font-large {
+  --font-size-base: 18px;
+  --font-size-heading: 30px;
+}
+
+/* Use these CSS variables throughout the app */
+h1, h2, h3 {
+  font-size: var(--font-size-heading);
+}
+
+p, span, ion-label, ion-text {
+  font-size: var(--font-size-base);
 }
 
 
-h2 {
-  font-size: 26px;
-  font-weight: 700;
-  margin-top: 0.5rem;
-  margin-bottom: 0.25rem;
+ion-alert.custom-select-alert {
+  --background: #1e1e1e; /* dark background */
+  --ion-text-color: #ffffff; /* white text */
+  --button-color: #3880ff; /* default blue for buttons */
+  --color-checked: #3880ff;
 }
 
-p {
-  font-size: 16px;
-  font-style: italic;
-  margin: 10px 0;
+ion-alert.custom-select-alert .alert-radio-label {
+  color: #fff;
 }
 
-.ion-margin-top {
-  margin-top: 1rem !important;
+ion-alert.custom-select-alert .alert-button {
+  color: var(--ion-color-primary);
 }
 
-.feedback-box {
-  padding: 10px;
-  background: var(--ion-color-light, #f5f5f5);
-  border-radius: 6px;
-  margin-top: 1rem;
+
+/* Apply dark styling to IonSelect alert dialogs */
+ion-alert.dark-select {
+  --background: #000000;
+  --ion-text-color: #ffffff;
+  --color: #ffffff;
+  --color-checked: #4cd964;
+  --button-color: #4cd964;
+  --ion-color-step-850: #2c2c2c;
 }
 
-.feedback-box h3 {
+ion-alert.dark-select .alert-radio-label {
+  color: #000000 !important;
+}
+
+ion-alert.dark-select .alert-button {
+  color: #4cd964;
+}
+/* Full override for IonSelect alerts in dark mode */
+ion-alert.dark-select {
+  --background: #ffffff;
+  --ion-text-color: #000000;
+  --color: #ffffff;
+  --color-checked: #4cd964;
+  --button-color: #4cd964;
+}
+
+ion-alert.dark-select .alert-radio-label {
+  color: #000000 !important;
+}
+
+ion-alert.dark-select .alert-button {
+  color: #4cd964 !important;
+}
+
+ion-alert.dark-select .alert-head,
+ion-alert.dark-select .alert-title,
+ion-alert.dark-select .alert-sub-title {
+  color: #ffffff !important;
+}
+
+ion-alert.dark-select .alert-radio-icon {
+  border-color: #000000 !important;
+}
+
+ion-alert.dark-select .alert-radio-inner {
+  background-color: #4cd964 !important;
+}
+
+
+
+
+
+/* Removes card look */
+.full-modal::part(content) {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: white;
+}
+
+/* Full content scrolling */
+.clean-fullscreen {
+  --background: white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Centered max width layout inside modal */
+.about-ripsec-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Clean list styling */
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+}
+.feature-list li {
   margin: 0.5rem 0;
-  font-size: 16px;
-  color: var(--ion-color-primary, #3880ff);
+  font-size: 1rem;
 }
 
-.feedback-box p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--ion-color-medium, #666);
+
+/* Light mode alert fix */
+.light-select .alert-radio-label {
+  color: #000 !important;
 }
 
-.incident-status-open {
-  color: red;
+.light-select .alert-title {
+  color: #000 !important;
 }
 
-.incident-status-investigating {
-  color: orange;
-}
-
-.incident-status-resolved {
-  color: green;
-}
-
-.incident-status-closed {
-  color: gray;
-}
-
-/* Override IonItem text wrapping */
-ion-item h3,
-ion-item p {
-  white-space: normal !important;
-  word-break: break-word;
+.light-select .alert-button {
+  color: #3880ff !important; /* or #000 if you prefer */
 }

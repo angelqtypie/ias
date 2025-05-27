@@ -93,12 +93,12 @@ const AuthPage: React.FC = () => {
               style={{
                 fontWeight: '900',
                 fontSize: '32px',
-                color: '#ffffff',
+                color: 'black',
                 letterSpacing: '1px',
                 textTransform: 'uppercase',
               }}
             >
-              UserTrack System
+              RIPSEC
             </IonTitle>
           </div>
         </IonToolbar>
@@ -107,7 +107,7 @@ const AuthPage: React.FC = () => {
       <IonContent fullscreen>
         <div
           style={{
-            background: 'linear-gradient(135deg, #1f4068, #2a5298)',
+            background: 'linear-gradient(135deg, #1f4068,rgb(82, 142, 247))',
             display: 'flex',
             height: '100vh',
             flexDirection: 'column',
@@ -116,6 +116,17 @@ const AuthPage: React.FC = () => {
             textAlign: 'center',
           }}
         >
+          <img
+  src="https://i.postimg.cc/J4qY9FkM/20250527-2051-RIPSEC-Logo-Design-simple-compose-01jw8wm8tnf719wz513heerw7f-1-removebg-preview.png"  // or use an online link
+  alt="Login Icon"
+  style={{
+    width: '400px',
+    height: '400px',
+    objectFit: 'cover',
+    marginTop:'-150px',
+    marginBottom: '-260px', // optional: overlap effect
+  }}
+/>
           <h2 style={{
             fontWeight: 'bold',
             fontSize: '32px',
@@ -126,25 +137,25 @@ const AuthPage: React.FC = () => {
           }}>Login</h2>
 
           <IonItem lines="inset" className="ion-margin-vertical" style={{ width: '300px', maxWidth: '90%', borderRadius: '10px', backgroundColor: '#f4f4f4' }}>
-            <IonLabel position="floating" color="primary">Email</IonLabel>
+            <IonLabel position="floating" color="dark">Email</IonLabel>
             <IonInput
               value={username}
               onIonChange={e => setUsername(e.detail.value!)}
               required
               autocomplete="off"
-              color="dark"
+              color="white"
             />
           </IonItem>
 
           <IonItem lines="inset" className="ion-margin-bottom" style={{ width: '300px', maxWidth: '90%', borderRadius: '10px', backgroundColor: '#f4f4f4' }}>
-            <IonLabel position="floating" color="primary">Password</IonLabel>
+            <IonLabel position="floating" color="dark">Password</IonLabel>
             <IonInput
               type="password"
               value={password}
               onIonChange={e => setPassword(e.detail.value!)}
               required
               autocomplete="off"
-              color="dark"
+              color="white"
             />
           </IonItem>
 
